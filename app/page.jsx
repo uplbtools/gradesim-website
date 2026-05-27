@@ -198,7 +198,7 @@ export default function Home() {
       <header className={styles.header} id="header">
         <div className={`container ${styles.headerContent}`}>
           <a href="/" className={styles.headerBrand}>
-            <img src="/icon.svg" alt="GradeSim" className={styles.headerLogo} />
+            <img src="/sims.png" alt="GradeSim" className={styles.headerLogo} />
             <span className={styles.headerName}>Elbi GradeSim</span>
           </a>
           <nav className={styles.headerNav}>
@@ -264,7 +264,7 @@ export default function Home() {
             <div className={styles.heroMockup}>
               <div className={styles.heroMockupCard}>
                 <div className={styles.mockupHeader}>
-                  <img src="/icon.svg" alt="GradeSim icon" className={styles.mockupIcon} />
+                  <img src="/sims.png" alt="GradeSim icon" className={styles.mockupIcon} />
                   <span className={styles.mockupTitle}>Elbi GradeSim</span>
                 </div>
 
@@ -566,7 +566,7 @@ export default function Home() {
       <footer className={styles.footer}>
         <div className={`container ${styles.footerContent}`}>
           <div className={styles.footerBrand}>
-            <img src="/icon.svg" alt="GradeSim" className={styles.footerLogo} />
+            <img src="/sims.png" alt="GradeSim" className={styles.footerLogo} />
             <span className={styles.footerName}>Elbi GradeSim</span>
           </div>
 
