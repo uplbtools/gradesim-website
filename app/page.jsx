@@ -12,22 +12,22 @@ const DESKTOP_COMPAT = [
   { browser: "Google Chrome", icon: "/chrome.svg", support: "✅ Full", store: "Chrome Web Store", storeUrl: CHROME_URL, notes: "Native support" },
   { browser: "Mozilla Firefox", icon: "/firefox.svg", support: "✅ Full", store: "Firefox Add-ons", storeUrl: FIREFOX_URL, notes: "Native support" },
   { browser: "Microsoft Edge", icon: "/edge.svg", support: "✅ Full", store: "Edge Add-ons", storeUrl: EDGE_URL, notes: "Native support" },
-  { browser: "Opera", icon: null, support: "✅ Full", store: "Chrome Web Store", storeUrl: CHROME_URL, notes: "Install via Chrome Web Store" },
-  { browser: "Brave", icon: null, support: "✅ Full", store: "Chrome Web Store", storeUrl: CHROME_URL, notes: "Install via Chrome Web Store" },
-  { browser: "Vivaldi", icon: null, support: "✅ Full", store: "Chrome Web Store", storeUrl: CHROME_URL, notes: "Install via Chrome Web Store" },
-  { browser: "Arc", icon: null, support: "✅ Full", store: "Chrome Web Store", storeUrl: CHROME_URL, notes: "Install via Chrome Web Store" },
-  { browser: "Safari", icon: null, support: "❌ None", store: "—", storeUrl: null, notes: "Not supported" },
+  { browser: "Opera", icon: "/opera.svg", support: "✅ Full", store: "Chrome Web Store", storeUrl: CHROME_URL, notes: "Install via Chrome Web Store" },
+  { browser: "Brave", icon: "/brave.svg", support: "✅ Full", store: "Chrome Web Store", storeUrl: CHROME_URL, notes: "Install via Chrome Web Store" },
+  { browser: "Vivaldi", icon: "/vivaldi.svg", support: "✅ Full", store: "Chrome Web Store", storeUrl: CHROME_URL, notes: "Install via Chrome Web Store" },
+  { browser: "Arc", icon: "/arc.svg", support: "✅ Full", store: "Chrome Web Store", storeUrl: CHROME_URL, notes: "Install via Chrome Web Store" },
+  { browser: "Safari", icon: "/safari.svg", support: "❌ None", store: "—", storeUrl: null, notes: "Not supported" },
 ];
 
 const MOBILE_COMPAT = [
-  { browser: "Firefox Android", support: "✅ Works", notes: "Install from Firefox Add-ons" },
-  { browser: "Kiwi Browser", support: "⚠️ Untested", notes: "Supports Chrome extensions; should work" },
-  { browser: "Samsung Internet", support: "❌ None", notes: "No extension support" },
-  { browser: "Chrome Android", support: "❌ None", notes: "Chrome mobile doesn't support extensions" },
-  { browser: "Chrome iOS", support: "❌ None", notes: "iOS doesn't support browser extensions" },
-  { browser: "Safari iOS", support: "❌ None", notes: "Not supported" },
-  { browser: "Edge Mobile", support: "❌ None", notes: "Mobile Edge doesn't support add-ons" },
-  { browser: "Opera Mobile", support: "❌ None", notes: "No extension support on mobile" },
+  { browser: "Firefox Android", icon: "/firefox.svg", support: "✅ Works", notes: "Install from Firefox Add-ons" },
+  { browser: "Kiwi Browser", icon: null, support: "⚠️ Untested", notes: "Supports Chrome extensions; should work" },
+  { browser: "Samsung Internet", icon: null, support: "❌ None", notes: "No extension support" },
+  { browser: "Chrome Android", icon: "/chrome.svg", support: "❌ None", notes: "Chrome mobile doesn't support extensions" },
+  { browser: "Chrome iOS", icon: "/chrome.svg", support: "❌ None", notes: "iOS doesn't support browser extensions" },
+  { browser: "Safari iOS", icon: "/safari.svg", support: "❌ None", notes: "Not supported" },
+  { browser: "Edge Mobile", icon: "/edge.svg", support: "❌ None", notes: "Mobile Edge doesn't support add-ons" },
+  { browser: "Opera Mobile", icon: "/opera.svg", support: "❌ None", notes: "No extension support on mobile" },
 ];
 
 const FEATURES = [
@@ -113,6 +113,8 @@ const PRIVACY_ITEMS = [
   },
 ];
 
+const TESTED_PROGRAMS = new Set(["BS Computer Science"]);
+
 const PROGRAMS = [
   {
     college: "College of Arts and Sciences",
@@ -179,6 +181,8 @@ const PROGRAMS = [
   },
 ];
 
+const CONTACT_EMAIL = "semariquit@gmail.com";
+
 function GitHubIcon() {
   return (
     <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20" style={{ flexShrink: 0 }}>
@@ -190,6 +194,25 @@ function GitHubIcon() {
 export default function Home() {
   return (
     <>
+      {/* Header */}
+      <header className={styles.header} id="header">
+        <div className={`container ${styles.headerContent}`}>
+          <a href="/" className={styles.headerBrand}>
+            <img src="/icon.svg" alt="GradeSim" className={styles.headerLogo} />
+            <span className={styles.headerName}>Elbi GradeSim</span>
+          </a>
+          <nav className={styles.headerNav}>
+            <a href="#features" className={styles.headerLink}>Features</a>
+            <a href="#download" className={styles.headerLink}>Download</a>
+            <a href="#compatibility" className={styles.headerLink}>Compatibility</a>
+            <a href="#programs" className={styles.headerLink}>Programs</a>
+            <a href={CHROME_URL} target="_blank" rel="noopener noreferrer" className="btn btn-primary" style={{ padding: '8px 20px', fontSize: '0.84rem' }} id="header-install-btn">
+              Install Free
+            </a>
+          </nav>
+        </div>
+      </header>
+
       {/* Hero */}
       <section className={styles.hero} id="hero">
         <div className={`container ${styles.heroContent}`}>
@@ -406,17 +429,35 @@ export default function Home() {
             Curricula across all UPLB colleges. Missing yours? Contribute on GitHub.
           </p>
 
+          <div className={styles.programsLegend}>
+            <span className={styles.legendItem}><span className={styles.legendBadgeTested}>✅ Tested</span> Verified working</span>
+            <span className={styles.legendItem}><span className={styles.legendBadgeUntested}>⚠️ Untested</span> Curriculum added, not yet verified</span>
+          </div>
+
           <div className={styles.programsGrid}>
             {PROGRAMS.map((college, i) => (
               <div key={i} className={`card ${styles.programCollege}`}>
                 <div className={styles.programCollegeName}>{college.college}</div>
                 <ul className={styles.programList}>
                   {college.programs.map((p, j) => (
-                    <li key={j} className={styles.programItem}>{p}</li>
+                    <li key={j} className={`${styles.programItem} ${TESTED_PROGRAMS.has(p) ? styles.programTested : ''}`}>
+                      <span>{p}</span>
+                      <span className={TESTED_PROGRAMS.has(p) ? styles.programBadgeTested : styles.programBadgeUntested}>
+                        {TESTED_PROGRAMS.has(p) ? '✅' : '⚠️'}
+                      </span>
+                    </li>
                   ))}
                 </ul>
               </div>
             ))}
+          </div>
+
+          <div className={styles.programsContact}>
+            <p>
+              Found an issue with your program&apos;s curriculum? Want to help us test?
+              Email us at{' '}
+              <a href={`mailto:${CONTACT_EMAIL}`} className={styles.contactLink}>{CONTACT_EMAIL}</a>
+            </p>
           </div>
         </div>
       </section>
@@ -444,8 +485,7 @@ export default function Home() {
                 {DESKTOP_COMPAT.map((row, i) => (
                   <tr key={i}>
                     <td className={styles.compatBrowser}>
-                      {row.icon && <img src={row.icon} alt="" className={styles.compatIcon} />}
-                      {!row.icon && <span className={styles.compatIconPlaceholder}>🌐</span>}
+                      {row.icon ? <img src={row.icon} alt="" className={styles.compatIcon} /> : <span className={styles.compatIconPlaceholder}>🌐</span>}
                       {row.browser}
                     </td>
                     <td><span className={styles.compatSupport}>{row.support}</span></td>
@@ -483,7 +523,7 @@ export default function Home() {
                 {MOBILE_COMPAT.map((row, i) => (
                   <tr key={i}>
                     <td className={styles.compatBrowser}>
-                      <span className={styles.compatIconPlaceholder}>📱</span>
+                      {row.icon ? <img src={row.icon} alt="" className={styles.compatIcon} /> : <span className={styles.compatIconPlaceholder}>📱</span>}
                       {row.browser}
                     </td>
                     <td><span className={styles.compatSupport}>{row.support}</span></td>
