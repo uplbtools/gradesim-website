@@ -1,4 +1,5 @@
 import styles from "./page.module.css";
+import pkg from "../package.json";
 
 const CHROME_URL =
   "https://chromewebstore.google.com/detail/elbi-gradesim-uplb-gwa-ca/mlhklblbhkikcmobmmajckjcbmdinldb";
@@ -219,7 +220,7 @@ export default function Home() {
           <div className={styles.heroText}>
             <div className={styles.heroBadge}>
               <span className={styles.heroBadgeDot} />
-              v1.1.1 · Free &amp; Open Source
+              v{pkg.version} · Free &amp; Open Source
             </div>
 
             <h1 className={styles.heroTitle}>
@@ -347,7 +348,7 @@ export default function Home() {
               <img src="/chrome.svg" alt="Google Chrome" className={styles.downloadBrowserIcon} />
               <h3 className={styles.downloadBrowserName}>Google Chrome</h3>
               <p className={styles.downloadBrowserVersion}>
-                Version 1.1.1 · 64.35 KiB · 5.0 ★ (2 ratings)
+                Version {pkg.version} · 64.35 KiB · 5.0 ★ (2 ratings)
               </p>
               <a href={CHROME_URL} target="_blank" rel="noopener noreferrer" className="btn btn-primary" id="download-chrome-btn">
                 Add to Chrome
@@ -362,7 +363,7 @@ export default function Home() {
               <img src="/firefox.svg" alt="Mozilla Firefox" className={styles.downloadBrowserIcon} />
               <h3 className={styles.downloadBrowserName}>Mozilla Firefox</h3>
               <p className={styles.downloadBrowserVersion}>
-                Version 1.1.1 · Also available on Android
+                Version {pkg.version} · Also available on Android
               </p>
               <a href={FIREFOX_URL} target="_blank" rel="noopener noreferrer" className="btn btn-primary" id="download-firefox-btn">
                 Add to Firefox
@@ -377,7 +378,7 @@ export default function Home() {
               <img src="/edge.svg" alt="Microsoft Edge" className={styles.downloadBrowserIcon} />
               <h3 className={styles.downloadBrowserName}>Microsoft Edge</h3>
               <p className={styles.downloadBrowserVersion}>
-                Version 1.1.1 · Edge Add-ons
+                Version {pkg.version} · Edge Add-ons
               </p>
               <a href={EDGE_URL} target="_blank" rel="noopener noreferrer" className="btn btn-primary" id="download-edge-btn">
                 Add to Edge
@@ -579,7 +580,7 @@ export default function Home() {
           </div>
 
           <span className={styles.footerCopy}>
-            © {new Date().getFullYear()} Elbi GradeSim
+            © {new Date().getFullYear()} Elbi GradeSim • v{pkg.version}
           </span>
         </div>
       </footer>
