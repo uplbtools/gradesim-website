@@ -1,3 +1,5 @@
+// app/page.jsx
+
 import styles from "./page.module.css";
 import pkg from "../package.json";
 
