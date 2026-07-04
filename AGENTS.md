@@ -49,11 +49,11 @@ CI (`.github/workflows/ci.yml`) runs `npm run build` on push to `main`. No unit 
 
 ```
 app/
-  page.jsx           # Landing
-  curricula/         # Curriculum browser
-  layout.js
-  globals.css
-public/              # Browser logos, curriculum images
+ page.jsx # Landing
+ curricula/ # Curriculum browser
+ layout.js
+ globals.css
+public/ # Browser logos, curriculum images
 ```
 
 This repo is **marketing/docs only**: the MV3 extension lives in [gradesim](https://github.com/uplbtools/gradesim).
