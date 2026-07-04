@@ -16,17 +16,17 @@ Org-wide agent defaults: see [room-tba/AGENTS.md](https://github.com/uplbtools/r
 ## Stack
 
 - **Framework:** Next.js 16 (App Router), React 19
-- **Language:** JavaScript (JSX) — not TypeScript
+- **Language:** JavaScript (JSX): not TypeScript
 - **Package manager:** npm (`package-lock.json`)
-- **Deploy:** Vercel — auto-deploy on push to **`main`**
+- **Deploy:** Vercel: auto-deploy on push to **`main`**
 - **Release:** semantic-release on `main` (tags + GitHub Release)
 
 ## Branches and deploy
 
 | Branch | Role |
 | --- | --- |
-| **`staging`** | Default branch on GitHub — integration / draft work |
-| **`main`** | Production — Vercel deploy + semantic-release |
+| **`staging`** | Default branch on GitHub: integration / draft work |
+| **`main`** | Production: Vercel deploy + semantic-release |
 
 **Ship flow:**
 
@@ -43,7 +43,7 @@ When the user says **"ship"**, they mean land on **`main`** / production, not st
 | `npm run dev` | UI/page changes |
 | PR title check | CI validates conventional title on PRs to `main` |
 
-CI (`.github/workflows/ci.yml`) runs `npm run build` on push to `main`. No unit test suite yet — manual browser check for layout changes.
+CI (`.github/workflows/ci.yml`) runs `npm run build` on push to `main`. No unit test suite yet: manual browser check for layout changes.
 
 ## Architecture (short)
 
@@ -56,7 +56,7 @@ app/
 public/              # Browser logos, curriculum images
 ```
 
-This repo is **marketing/docs only** — the MV3 extension lives in [gradesim](https://github.com/uplbtools/gradesim).
+This repo is **marketing/docs only**: the MV3 extension lives in [gradesim](https://github.com/uplbtools/gradesim).
 
 ## UI guardrails
 
@@ -71,5 +71,5 @@ This repo is **marketing/docs only** — the MV3 extension lives in [gradesim](h
 
 ## Security
 
-- No AMIS credentials or user grade data on this site — extension is 100% local
+- No AMIS credentials or user grade data on this site: extension is 100% local
 - Do not commit Vercel tokens or `.env.local`
