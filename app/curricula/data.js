@@ -1,3 +1,5 @@
+// app/curricula/data.js
+
 // Mapping of program names to their curriculum PNG image paths
 // Each program may have 1 or 2 pages
 

@@ -20,3 +20,12 @@ This site is deployed automatically to Vercel on push to `main`.
 ## Related
 
 - [GradeSim Browser Extension](https://github.com/smmariquit/gradesim) — the main extension repo
+
+## 📊 Current State of the Code
+- **Tech Stack:** React, Next.js, Node.js/NPM
+- **Repository Size:** 85 tracked files
+- **Latest Update:** `971dd5f chore: add stale issue and PR validators`
+
+
+---
+*☕ If you found this project useful, you can support my work at [kape.stimmie.dev](https://kape.stimmie.dev)!*
