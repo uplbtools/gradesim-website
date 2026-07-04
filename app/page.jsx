@@ -2,6 +2,7 @@
 
 import styles from "./page.module.css";
 import pkg from "../package.json";
+import LegalMicroLink from "../components/LegalMicroLink";
 
 const CHROME_URL =
   "https://chromewebstore.google.com/detail/elbi-gradesim-uplb-gwa-ca/mlhklblbhkikcmobmmajckjcbmdinldb";
@@ -578,7 +579,8 @@ export default function Home() {
             <a href={FIREFOX_URL} target="_blank" rel="noopener noreferrer" className={styles.footerLink}>Firefox Add-ons</a>
             <a href={EDGE_URL} target="_blank" rel="noopener noreferrer" className={styles.footerLink}>Edge Add-ons</a>
             <a href={GITHUB_URL} target="_blank" rel="noopener noreferrer" className={styles.footerLink}>GitHub</a>
-            <a href={`${GITHUB_URL}/blob/main/PRIVACY_POLICY.md`} target="_blank" rel="noopener noreferrer" className={styles.footerLink}>Privacy Policy</a>
+            <LegalMicroLink href="/privacy">Privacy</LegalMicroLink>
+            <LegalMicroLink href="/terms">Terms</LegalMicroLink>
           </div>
 
           <span className={styles.footerCopy}>
