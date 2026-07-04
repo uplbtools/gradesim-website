@@ -196,7 +196,7 @@
 
 .mockupGwaLabel {
   font-size: 0.75rem;
-  color: var(--text-muted);
+  color: var(--text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.1em;
   margin-bottom: 6px;
@@ -206,7 +206,7 @@
   font-family: var(--font-display);
   font-size: 3rem;
   font-weight: 800;
-  color: var(--maroon-light);
+  color: #f0d76e;
 }
 
 .mockupHonor {
