@@ -1,0 +1,97 @@
+.legalPage {
+  max-width: 42rem;
+  margin: 0 auto;
+  padding: 2.5rem 1.25rem 4rem;
+}
+
+.backLink {
+  display: inline-block;
+  margin-bottom: 1.5rem;
+  font-size: 0.875rem;
+  color: var(--text-muted);
+  text-decoration: none;
+  transition: color 0.15s ease;
+}
+
+.backLink:hover {
+  color: var(--text);
+  text-decoration: underline;
+}
+
+.legalHeader {
+  margin-bottom: 2rem;
+}
+
+.legalEyebrow {
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin: 0;
+}
+
+.legalTitle {
+  font-family: var(--font-display);
+  font-size: clamp(1.75rem, 4vw, 2.25rem);
+  font-weight: 700;
+  margin: 0.25rem 0 0;
+}
+
+.legalUpdated {
+  margin: 0.5rem 0 0;
+  font-size: 0.875rem;
+  color: var(--text-muted);
+}
+
+.legalBody {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  font-size: 0.9rem;
+  line-height: 1.65;
+  color: var(--text);
+}
+
+.legalBody h2 {
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  font-weight: 600;
+  margin: 0 0 0.375rem;
+}
+
+.legalBody h3 {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  margin: 0.75rem 0 0.25rem;
+}
+
+.legalBody p,
+.legalBody ul {
+  margin: 0;
+  color: var(--text-muted);
+}
+
+.legalBody ul {
+  padding-left: 1.25rem;
+}
+
+.legalBody li + li {
+  margin-top: 0.375rem;
+}
+
+.legalMicroLink {
+  font-size: 0.84rem;
+  color: var(--text-muted);
+  text-decoration: none;
+  transition: color 0.15s ease;
+}
+
+.legalMicroLink:hover {
+  color: var(--text);
+  text-decoration: underline;
+}
+
+.legalMicroLink--subtle {
+  font-size: 0.75rem;
+  opacity: 0.7;
+}
