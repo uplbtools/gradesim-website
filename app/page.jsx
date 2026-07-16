@@ -202,7 +202,7 @@ export default function Home() {
       <header className={styles.header} id="header">
         <div className={`container ${styles.headerContent}`}>
           <a href="/" className={styles.headerBrand}>
-            <img src="/sims.png" alt="GradeSim" className={styles.headerLogo} />
+            <img src="/sims.png" width={40} height={40} alt="GradeSim" className={styles.headerLogo}  decoding="async" />
             <span className={styles.headerName}>Elbi GradeSim</span>
           </a>
           <nav className={styles.headerNav}>
@@ -238,13 +238,13 @@ export default function Home() {
 
             <div className={styles.heroActions}>
               <a href={CHROME_URL} target="_blank" rel="noopener noreferrer" className="btn btn-primary" id="hero-chrome-btn">
-                <img src="/chrome.svg" alt="" className="btn-icon" /> Add to Chrome
+                <img src="/chrome.svg" width={20} height={20} alt="" className="btn-icon"  decoding="async" /> Add to Chrome
               </a>
               <a href={FIREFOX_URL} target="_blank" rel="noopener noreferrer" className="btn btn-outline" id="hero-firefox-btn">
-                <img src="/firefox.svg" alt="" className="btn-icon" /> Add to Firefox
+                <img src="/firefox.svg" width={20} height={20} alt="" className="btn-icon"  decoding="async" /> Add to Firefox
               </a>
               <a href={EDGE_URL} target="_blank" rel="noopener noreferrer" className="btn btn-outline" id="hero-edge-btn">
-                <img src="/edge.svg" alt="" className="btn-icon" /> Add to Edge
+                <img src="/edge.svg" width={20} height={20} alt="" className="btn-icon"  decoding="async" /> Add to Edge
               </a>
             </div>
 
@@ -268,7 +268,7 @@ export default function Home() {
             <div className={styles.heroMockup}>
               <div className={styles.heroMockupCard}>
                 <div className={styles.mockupHeader}>
-                  <img src="/sims.png" alt="GradeSim icon" className={styles.mockupIcon} />
+                  <img src="/sims.png" width={40} height={40} alt="GradeSim icon" className={styles.mockupIcon}  decoding="async" />
                   <span className={styles.mockupTitle}>Elbi GradeSim</span>
                 </div>
 
@@ -348,7 +348,7 @@ export default function Home() {
 
           <div className={styles.downloadCards}>
             <div className={`card ${styles.downloadCard}`}>
-              <img src="/chrome.svg" alt="Google Chrome" className={styles.downloadBrowserIcon} />
+              <img src="/chrome.svg" width={20} height={20} alt="Google Chrome" className={styles.downloadBrowserIcon}  decoding="async" />
               <h3 className={styles.downloadBrowserName}>Google Chrome</h3>
               <p className={styles.downloadBrowserVersion}>
                 Version {pkg.version} · 64.35 KiB · 5.0 ★ (2 ratings)
@@ -363,7 +363,7 @@ export default function Home() {
             </div>
 
             <div className={`card ${styles.downloadCard}`}>
-              <img src="/firefox.svg" alt="Mozilla Firefox" className={styles.downloadBrowserIcon} />
+              <img src="/firefox.svg" width={20} height={20} alt="Mozilla Firefox" className={styles.downloadBrowserIcon}  decoding="async" />
               <h3 className={styles.downloadBrowserName}>Mozilla Firefox</h3>
               <p className={styles.downloadBrowserVersion}>
                 Version {pkg.version} · Also available on Android
@@ -378,7 +378,7 @@ export default function Home() {
             </div>
 
             <div className={`card ${styles.downloadCard}`}>
-              <img src="/edge.svg" alt="Microsoft Edge" className={styles.downloadBrowserIcon} />
+              <img src="/edge.svg" width={20} height={20} alt="Microsoft Edge" className={styles.downloadBrowserIcon}  decoding="async" />
               <h3 className={styles.downloadBrowserName}>Microsoft Edge</h3>
               <p className={styles.downloadBrowserVersion}>
                 Version {pkg.version} · Edge Add-ons
@@ -489,7 +489,7 @@ export default function Home() {
                 {DESKTOP_COMPAT.map((row, i) => (
                   <tr key={i}>
                     <td className={styles.compatBrowser}>
-                      {row.icon ? <img src={row.icon} alt="" className={styles.compatIcon} /> : <span className={styles.compatIconPlaceholder}>🌐</span>}
+                      {row.icon ? <img src={row.icon} alt="" className={styles.compatIcon}  decoding="async" /> : <span className={styles.compatIconPlaceholder}>🌐</span>}
                       {row.browser}
                     </td>
                     <td><span className={styles.compatSupport}>{row.support}</span></td>
@@ -527,7 +527,7 @@ export default function Home() {
                 {MOBILE_COMPAT.map((row, i) => (
                   <tr key={i}>
                     <td className={styles.compatBrowser}>
-                      {row.icon ? <img src={row.icon} alt="" className={styles.compatIcon} /> : <span className={styles.compatIconPlaceholder}>📱</span>}
+                      {row.icon ? <img src={row.icon} alt="" className={styles.compatIcon}  decoding="async" /> : <span className={styles.compatIconPlaceholder}>📱</span>}
                       {row.browser}
                     </td>
                     <td><span className={styles.compatSupport}>{row.support}</span></td>
@@ -550,13 +550,13 @@ export default function Home() {
             </p>
             <div className={styles.ctaActions}>
               <a href={CHROME_URL} target="_blank" rel="noopener noreferrer" className="btn btn-primary" id="cta-chrome-btn">
-                <img src="/chrome.svg" alt="" className="btn-icon" /> Add to Chrome
+                <img src="/chrome.svg" width={20} height={20} alt="" className="btn-icon"  decoding="async" /> Add to Chrome
               </a>
               <a href={FIREFOX_URL} target="_blank" rel="noopener noreferrer" className="btn btn-outline" id="cta-firefox-btn">
-                <img src="/firefox.svg" alt="" className="btn-icon" /> Add to Firefox
+                <img src="/firefox.svg" width={20} height={20} alt="" className="btn-icon"  decoding="async" /> Add to Firefox
               </a>
               <a href={EDGE_URL} target="_blank" rel="noopener noreferrer" className="btn btn-outline" id="cta-edge-btn">
-                <img src="/edge.svg" alt="" className="btn-icon" /> Add to Edge
+                <img src="/edge.svg" width={20} height={20} alt="" className="btn-icon"  decoding="async" /> Add to Edge
               </a>
               <a href={GITHUB_URL} target="_blank" rel="noopener noreferrer" className="btn btn-outline" id="cta-github-btn">
                 <GitHubIcon /> View on GitHub
@@ -570,7 +570,7 @@ export default function Home() {
       <footer className={styles.footer}>
         <div className={`container ${styles.footerContent}`}>
           <div className={styles.footerBrand}>
-            <img src="/sims.png" alt="GradeSim" className={styles.footerLogo} />
+            <img src="/sims.png" width={40} height={40} alt="GradeSim" className={styles.footerLogo}  decoding="async" />
             <span className={styles.footerName}>Elbi GradeSim</span>
           </div>
 

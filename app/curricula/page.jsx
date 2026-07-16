@@ -89,7 +89,7 @@ function ProgramModal({ program, college, onClose }) {
                 alt={`${program.name} curriculum page ${i + 1}`}
                 className={styles.curriculumImage}
                 loading="lazy"
-              />
+               decoding="async" />
             ))}
           </div>
         )}
