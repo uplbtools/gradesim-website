@@ -2,7 +2,7 @@ import Link from "next/link";
 import styles from "../legal.module.css";
 
 export const metadata = {
-  title: "Privacy Policy — Elbi GradeSim",
+  title: "Privacy Policy: Elbi GradeSim",
   description:
     "How Elbi GradeSim handles your data. Grade data stays on your device in the browser extension.",
 };
@@ -28,7 +28,7 @@ export default function PrivacyPage() {
             AMIS (amis.uplb.edu.ph) and helps UPLB students calculate GWA and simulate
             Latin honor targets. This website (gradesim) promotes and documents the
             extension. The extension and this site are open-source projects maintained
-            by volunteers — not an official UPLB product.
+            by volunteers: not an official UPLB product.
           </p>
         </section>
 
@@ -46,7 +46,7 @@ export default function PrivacyPage() {
           <ul>
             <li>No account sign-up required.</li>
             <li>No analytics or telemetry in the extension.</li>
-            <li>No cloud sync — uninstalling or clearing browser data removes stored grades.</li>
+            <li>No cloud sync: uninstalling or clearing browser data removes stored grades.</li>
             <li>
               The extension only interacts with AMIS pages you open; it does not run in
               the background on unrelated sites.

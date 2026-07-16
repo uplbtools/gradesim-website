@@ -2,7 +2,7 @@ import Link from "next/link";
 import styles from "../legal.module.css";
 
 export const metadata = {
-  title: "Terms of Service — Elbi GradeSim",
+  title: "Terms of Service: Elbi GradeSim",
   description: "Terms for using the Elbi GradeSim browser extension and website.",
 };
 
@@ -33,7 +33,7 @@ export default function TermsPage() {
           <p>
             Elbi GradeSim reads grade information displayed on AMIS pages you visit
             and performs local calculations (GWA, honor simulations, curriculum
-            planning). It is a student tool — not an official UPLB or AMIS service.
+            planning). It is a student tool: not an official UPLB or AMIS service.
             Calculations are estimates; verify important academic decisions with your
             college secretary or registrar.
           </p>

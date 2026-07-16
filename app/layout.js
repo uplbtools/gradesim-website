@@ -3,7 +3,7 @@
 import "./globals.css";
 
 export const metadata = {
-  title: "Elbi GradeSim — UPLB GWA Calculator & Latin Honor Simulator",
+  title: "Elbi GradeSim: UPLB GWA Calculator & Latin Honor Simulator",
   description:
     "Calculate your GWA and simulate the grades you need for Latin honors at UPLB. Free browser extension for Chrome and Firefox. All data stays on your device.",
   keywords: [
@@ -18,7 +18,7 @@ export const metadata = {
     "GradeSim",
   ],
   openGraph: {
-    title: "Elbi GradeSim — UPLB GWA Calculator",
+    title: "Elbi GradeSim: UPLB GWA Calculator",
     description:
       "Calculate your GWA and simulate grades needed for Latin honors at UPLB. Free, private, and open source.",
     type: "website",
