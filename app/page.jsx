@@ -298,10 +298,12 @@ export default function Home() {
       <section className="section" id="features">
         <div className="container">
           <div className="section-label">Features</div>
-          <h2 className="section-title">Everything you need to plan ahead</h2>
+          <h2 className="section-title">
+            GWA, What If? grades, and 30+ curricula
+          </h2>
           <p className="section-subtitle">
-            Built for UPLB students who want to track their academic progress and
-            plan for Latin honors.
+            Built for UPLB students who track GWA from AMIS and plan for Latin
+            honors.
           </p>
 
           <div className={styles.featuresGrid}>

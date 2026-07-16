@@ -134,6 +134,11 @@
 }
 
 .modalClose {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  min-width: 44px;
   background: none;
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
@@ -147,6 +152,11 @@
 .modalClose:hover {
   border-color: var(--text-muted);
   color: var(--text);
+}
+
+.modalClose:focus-visible {
+  outline: 2px solid var(--maroon, #7b1113);
+  outline-offset: 2px;
 }
 
 .modalTabs {
