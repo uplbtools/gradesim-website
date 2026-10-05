@@ -1,0 +1,158 @@
+{
+ "source": "elbi-gradesim",
+ "timestamp": "2026-10-01T00:00:00.000Z",
+ "selectedProgram": "BSCS",
+ "excludedCourses": [],
+ "substitutions": {},
+ "gradesData": {
+  "student_grades": {
+   "1231": {
+    "values": [
+     {
+      "id": 1,
+      "grade": "1.25",
+      "unit_taken": "3",
+      "course": {
+       "course_code": "CMSC 12",
+       "title": "Foundations of Computer Science"
+      }
+     },
+     {
+      "id": 2,
+      "grade": "5.00",
+      "unit_taken": "3",
+      "course": {
+       "course_code": "MATH 27",
+       "title": "Analytic Geometry and Calculus I"
+      }
+     },
+     {
+      "id": 3,
+      "grade": "1.50",
+      "unit_taken": "3",
+      "course": {
+       "course_code": "ARTS 1",
+       "title": "(GE) Critical Perspectives in the Arts"
+      }
+     },
+     {
+      "id": 4,
+      "grade": "1.75",
+      "unit_taken": "3",
+      "course": {
+       "course_code": "COMM 10",
+       "title": "(GE) Critical Perspectives in Communication"
+      }
+     },
+     {
+      "id": 5,
+      "grade": "1.00",
+      "unit_taken": "2",
+      "course": {
+       "course_code": "HK 11",
+       "title": "Wellness and Basic Injury Management"
+      }
+     },
+     {
+      "id": 6,
+      "grade": "S",
+      "unit_taken": "3",
+      "course": {
+       "course_code": "NSTP 1",
+       "title": "National Service Training Program I"
+      }
+     }
+    ]
+   },
+   "1232": {
+    "values": [
+     {
+      "id": 7,
+      "grade": "1.50",
+      "unit_taken": "3",
+      "course": {
+       "course_code": "CMSC 21",
+       "title": "Fundamentals of Programming"
+      }
+     },
+     {
+      "id": 8,
+      "grade": "2.00",
+      "unit_taken": "3",
+      "course": {
+       "course_code": "CMSC 56",
+       "title": "Discrete Mathematical Structures in Computer Science I"
+      }
+     },
+     {
+      "id": 9,
+      "grade": "1.25",
+      "unit_taken": "3",
+      "course": {
+       "course_code": "ETHICS 1",
+       "title": "(GE) Ethics and Moral Reasoning in Everyday Life"
+      }
+     },
+     {
+      "id": 10,
+      "grade": "INC",
+      "unit_taken": "3",
+      "course": {
+       "course_code": "STS 1",
+       "title": "(GE) Science, Technology and Society"
+      }
+     },
+     {
+      "id": 11,
+      "grade": "S",
+      "unit_taken": "3",
+      "course": {
+       "course_code": "NSTP 2",
+       "title": "National Service Training Program II"
+      }
+     }
+    ]
+   },
+   "1241": {
+    "values": [
+     {
+      "id": 12,
+      "grade": "1.75",
+      "unit_taken": "3",
+      "course": {
+       "course_code": "CMSC 22",
+       "title": "Object-Oriented Programming"
+      }
+     },
+     {
+      "id": 13,
+      "grade": "2.25",
+      "unit_taken": "3",
+      "course": {
+       "course_code": "CMSC 57",
+       "title": "Discrete Mathematical Structures in Computer Science II"
+      }
+     },
+     {
+      "id": 14,
+      "grade": "1.00",
+      "unit_taken": "3",
+      "course": {
+       "course_code": "KAS 1",
+       "title": "(GE) Kasaysayan ng Pilipinas"
+      }
+     },
+     {
+      "id": 15,
+      "grade": "2.50",
+      "unit_taken": "3",
+      "course": {
+       "course_code": "STAT 101",
+       "title": "Statistical Methods"
+      }
+     }
+    ]
+   }
+  }
+ }
+}

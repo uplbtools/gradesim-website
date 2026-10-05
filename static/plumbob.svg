@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 48" fill="none">
+  <!-- Elbi GradeSim plumbob, flat green #2a8f55, at least 3:1 on both the light and dark page -->
+  <path d="M16 1 4 19l12 28 12-28L16 1Z" fill="#2a8f55"/>
+  <path d="M16 1v46M4 19h24M4 19l12 6 12-6" stroke="#fff" stroke-opacity=".35" stroke-width="1" stroke-linejoin="round"/>
+</svg>

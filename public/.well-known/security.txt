@@ -1,3 +1,0 @@
-Contact: mailto:semariquit@gmail.com
-Preferred-Languages: en
-Canonical: https://gradesim.stimmie.dev/.well-known/security.txt

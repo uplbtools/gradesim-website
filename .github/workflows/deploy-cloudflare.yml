@@ -24,11 +24,11 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy out --project-name=gradesim-website --branch=pr-${{ github.event.pull_request.number }}
+          command: pages deploy build --project-name=gradesim-website --branch=pr-${{ github.event.pull_request.number }}
       - name: Deploy production
         if: github.ref == 'refs/heads/main'
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy out --project-name=gradesim-website --branch=main
+          command: pages deploy build --project-name=gradesim-website --branch=main
