@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { onMount, tick } from 'svelte';
 	import { app } from '#lib/app.svelte.ts';
-	import { askExtension } from '#lib/bridge.ts';
+	import { getExtensionGrades, probeExtension } from '#lib/bridge.ts';
 	import { UPLB_PROGRAMS } from '#lib/curriculum.ts';
 	import { parseBackup, parseImport } from '#lib/importers.ts';
 	import Seo from '#lib/components/Seo.svelte';
@@ -24,7 +24,6 @@
 	let tab = $state<Tab>('grades');
 	/** checking, found (the extension answered with grades), empty (answered, nothing captured yet) or missing. */
 	let extension = $state<'checking' | 'found' | 'empty' | 'missing'>('checking');
-	let extensionReply: unknown = null;
 	let message = $state<{ text: string; tone: 'ok' | 'bad' } | null>(null);
 	let manual = $state(false);
 
@@ -59,11 +58,7 @@
 			url.searchParams.delete('program');
 			history.replaceState(history.state, '', url.pathname + url.search + url.hash);
 		}
-		askExtension().then((reply) => {
-			extensionReply = reply;
-			if (!reply) extension = 'missing';
-			else extension = typeof parseBackup(reply) === 'string' ? 'empty' : 'found';
-		});
+		probeExtension().then((r) => (extension = r ?? 'missing'));
 	});
 
 	// Save on every change once the saved state has been read.
@@ -73,8 +68,13 @@
 		app.persist();
 	});
 
-	function fromExtension() {
-		const r = parseBackup(extensionReply);
+	async function fromExtension() {
+		const reply = await getExtensionGrades();
+		if (!reply) {
+			message = { text: 'The extension did not answer. Reload this page and try again.', tone: 'bad' };
+			return;
+		}
+		const r = parseBackup(reply);
 		if (typeof r === 'string') {
 			message = { text: r, tone: 'bad' };
 			return;

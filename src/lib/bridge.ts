@@ -5,6 +5,10 @@
 // externally_connectable, so the page can message it by extension id.
 // Firefox has no externally_connectable for web pages, so the extension runs a
 // small content script on this site that answers window.postMessage requests.
+//
+// Two requests: GRADESIM_PING only says whether grades exist (sent on load to
+// pick the right button), GRADESIM_GET_GRADES hands them over and is only sent
+// when the student clicks Import.
 
 /** Store ids. Opera and Brave install from the Chrome Web Store, so they share its id. */
 export const EXTENSION_IDS = [
@@ -12,21 +16,21 @@ export const EXTENSION_IDS = [
 	'ebiakebpglddgmkdehdjiadnjgkmgnga' // Edge Add-ons
 ];
 
-const REQUEST = 'GRADESIM_GET_GRADES';
-const REPLY = 'GRADESIM_GRADES';
+type Request = 'GRADESIM_PING' | 'GRADESIM_GET_GRADES';
+const REPLY = 'GRADESIM_REPLY';
 
 interface ChromeRuntime {
 	sendMessage: (id: string, msg: unknown, cb: (reply: unknown) => void) => void;
 	lastError?: unknown;
 }
 
-function viaRuntime(id: string, timeout: number): Promise<unknown> {
+function viaRuntime(id: string, type: Request, timeout: number): Promise<unknown> {
 	const rt = (globalThis as unknown as { chrome?: { runtime?: ChromeRuntime } }).chrome?.runtime;
 	if (!rt?.sendMessage) return Promise.resolve(null);
 	return new Promise((resolve) => {
 		const timer = setTimeout(() => resolve(null), timeout);
 		try {
-			rt.sendMessage(id, { type: REQUEST }, (reply) => {
+			rt.sendMessage(id, { type }, (reply) => {
 				clearTimeout(timer);
 				void rt.lastError; // read it so Chrome does not log "unchecked lastError"
 				resolve(reply ?? null);
@@ -38,11 +42,11 @@ function viaRuntime(id: string, timeout: number): Promise<unknown> {
 	});
 }
 
-function viaWindow(timeout: number): Promise<unknown> {
+function viaWindow(type: Request, timeout: number): Promise<unknown> {
 	return new Promise((resolve) => {
 		const onMessage = (e: MessageEvent) => {
 			if (e.source !== window || e.origin !== location.origin) return;
-			if (e.data?.type !== REPLY) return;
+			if (e.data?.type !== REPLY || e.data.request !== type) return;
 			cleanup();
 			resolve(e.data.payload ?? null);
 		};
@@ -55,16 +59,24 @@ function viaWindow(timeout: number): Promise<unknown> {
 			resolve(null);
 		}, timeout);
 		window.addEventListener('message', onMessage);
-		window.postMessage({ type: REQUEST }, location.origin);
+		window.postMessage({ type }, location.origin);
 	});
 }
 
-/**
- * The extension's reply: the same shape as its JSON backup, or null when no
- * extension answered (not installed, or an older version without the bridge).
- */
-export async function askExtension(timeout = 800): Promise<unknown> {
+async function ask(type: Request, timeout: number): Promise<unknown> {
 	if (typeof window === 'undefined') return null;
-	const replies = await Promise.all([...EXTENSION_IDS.map((id) => viaRuntime(id, timeout)), viaWindow(timeout)]);
+	const replies = await Promise.all([...EXTENSION_IDS.map((id) => viaRuntime(id, type, timeout)), viaWindow(type, timeout)]);
 	return replies.find((r) => r != null) ?? null;
+}
+
+/** 'found' when the extension has grades, 'empty' when it is installed without any, null when nothing answered. */
+export async function probeExtension(timeout = 800): Promise<'found' | 'empty' | null> {
+	const r = (await ask('GRADESIM_PING', timeout)) as { hasGrades?: boolean } | null;
+	if (!r) return null;
+	return r.hasGrades ? 'found' : 'empty';
+}
+
+/** The extension's grades in the same shape as its JSON backup, or null. */
+export function getExtensionGrades(timeout = 3000): Promise<unknown> {
+	return ask('GRADESIM_GET_GRADES', timeout);
 }

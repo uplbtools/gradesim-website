@@ -111,3 +111,19 @@ test('@phone mobile layout stacks the planner terms', async ({ page }) => {
 	// On phones the details open inline, inside the term list.
 	await expect(grid.getByRole('complementary', { name: 'Details for MATH 27' })).toBeVisible();
 });
+
+test('imports from the extension through the window bridge', async ({ page }) => {
+	// Stand-in for the Firefox content script: answers the page's requests.
+	await page.addInitScript((payload) => {
+		window.addEventListener('message', (e) => {
+			const type = e.data?.type;
+			if (e.source !== window || (type !== 'GRADESIM_PING' && type !== 'GRADESIM_GET_GRADES')) return;
+			const reply = type === 'GRADESIM_PING' ? { hasGrades: true } : JSON.parse(payload);
+			window.postMessage({ type: 'GRADESIM_REPLY', request: type, payload: reply }, location.origin);
+		});
+	}, backup.toString());
+	await open(page);
+	await page.getByRole('button', { name: 'Import from the GradeSim extension' }).click();
+	await expect(page.getByTestId('gwa')).toHaveText('1.9773');
+	await expect(page.getByRole('status').first()).toContainText('from the GradeSim extension');
+});
