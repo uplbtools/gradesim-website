@@ -1,30 +1,34 @@
-# GradeSim Website
+# Elbi GradeSim web app
 
-The official website for [GradeSim](https://github.com/smmariquit/gradesim): a browser extension that simulates your grades for UPLB students.
+The web app at [gradesim.uplb.tools](https://gradesim.uplb.tools): a UPLB GWA calculator, Latin honors simulator and course planner that runs entirely in the browser. It is the companion to the [GradeSim browser extension](https://github.com/uplbtools/gradesim), which reads grades from AMIS.
 
-Built with [Next.js](https://nextjs.org) and deployed on [Vercel](https://vercel.com).
+Built with SvelteKit (Svelte 5, TypeScript) and prerendered to static files. Grades are kept in the browser's local storage under the `gradesim:v1` key and never sent anywhere.
 
-## Getting Started
+## Getting started
 
 ```bash
 npm install
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) to view the site locally.
+## Checks
+
+```bash
+npm run check      # svelte-check
+npm run lint       # eslint
+npm test           # vitest: scheduler, curriculum, GWA, importers, planner, xlsx
+npm run build      # static site in build/
+npm run test:e2e   # Playwright against the built site
+```
+
+## Layout
+
+- `src/routes/+page.svelte` is the app (Grades, What if, Planner, Wrapped). `about`, `install`, `curricula`, `privacy` and `terms` are the pages around it.
+- `src/lib/*.ts` holds the logic ported from the extension as pure functions: `scheduler.ts`, `curriculum.ts`, `catalog.ts`, `grades.ts`, `planner.ts`, `xlsx.ts`, `wrapped.ts`, and `importers.ts` for backups, plan files and manual entry.
+- `src/lib/data/*.json` is generated from the extension's `curriculum.js` and `catalog.js`. Fix curriculum data in the extension repo and copy it over.
+- `src/lib/bridge.ts` asks an installed extension for its grades (externally_connectable on Chromium browsers, a window message answered by a content script on Firefox).
+- `src/service-worker/` precaches the build so the app works offline.
 
 ## Deployment
 
-This site is deployed automatically to Vercel on push to `main`.
-
-## Related
-
-- [GradeSim Browser Extension](https://github.com/smmariquit/gradesim): the main extension repo
-
-## 📊 Current State of the Code
-- **Tech Stack:** React, Next.js, Node.js/NPM
-- **Repository Size:** 85 tracked files
-- **Latest Update:** `971dd5f chore: add stale issue and PR validators`
-
----
-*☕ If you found this project useful, you can support my work at [kape.stimmie.dev](https://kape.stimmie.dev)!*
+Vercel builds `main` (`vercel.json` sets the static output in `build/`).

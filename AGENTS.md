@@ -15,8 +15,8 @@ Org-wide agent defaults: see [room-tba/AGENTS.md](https://github.com/uplbtools/r
 
 ## Stack
 
-- **Framework:** Next.js 16 (App Router), React 19
-- **Language:** JavaScript (JSX): not TypeScript
+- **Framework:** SvelteKit 3 (Svelte 5 runes), adapter-static, every page prerendered
+- **Language:** TypeScript
 - **Package manager:** npm (`package-lock.json`)
 - **Deploy:** Vercel: auto-deploy on push to **`main`**
 - **Release:** semantic-release on `main` (tags + GitHub Release)
@@ -39,24 +39,24 @@ When the user says **"ship"**, they mean land on **`main`** / production, not st
 
 | Step | When |
 | --- | --- |
-| `npm run build` | Before commit/PR on substantive changes |
-| `npm run dev` | UI/page changes |
+| `npm run check && npm run lint && npm test && npm run build` | Before commit/PR on substantive changes |
+| `npm run test:e2e` | UI changes (Playwright, builds first) |
 | PR title check | CI validates conventional title on PRs to `main` |
 
-CI (`.github/workflows/ci.yml`) runs `npm run build` on push to `main`. No unit test suite yet: manual browser check for layout changes.
+CI (`.github/workflows/ci.yml`) runs check, lint, vitest, build and Playwright.
 
 ## Architecture (short)
 
 ```
-app/
- page.jsx # Landing
- curricula/ # Curriculum browser
- layout.js
- globals.css
-public/ # Browser logos, curriculum images
+src/routes/+page.svelte   # the app: Grades, What if, Planner, Wrapped
+src/routes/{about,install,curricula,privacy,terms}/
+src/lib/*.ts              # pure logic ported from the extension, with vitest tests
+src/lib/data/*.json       # curriculum and catalog, generated from the extension
+src/service-worker/       # offline precache
+static/                   # fonts, icons, curriculum images, og.jpg
 ```
 
-This repo is **marketing/docs only**: the MV3 extension lives in [gradesim](https://github.com/uplbtools/gradesim).
+The app is the main thing; the other pages sit around it. The MV3 extension lives in [gradesim](https://github.com/uplbtools/gradesim).
 
 ## UI guardrails
 
@@ -71,5 +71,5 @@ This repo is **marketing/docs only**: the MV3 extension lives in [gradesim](http
 
 ## Security
 
-- No AMIS credentials or user grade data on this site: extension is 100% local
+- No AMIS credentials or grade data ever leave the browser: no analytics, no server calls with grades
 - Do not commit Vercel tokens or `.env.local`

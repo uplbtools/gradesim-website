@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://gradesim.uplb.tools/sitemap.xml

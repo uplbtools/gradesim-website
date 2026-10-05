@@ -1,0 +1,130 @@
+/* UPLB Tools design tokens for Elbi GradeSim.
+   Light values follow uplbtools.me src/styles/global.css (the Room TBA palette).
+   Dark values follow the Room TBA wiki dark overrides.
+   Copied from the extension (extension/src/tokens.css); keep the two in sync. */
+
+@font-face {
+  font-family: "Inter";
+  src: url("/fonts/InterVariable.woff2") format("woff2");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Raleway";
+  src: url("/fonts/Raleway-Bold.woff2") format("woff2");
+  font-weight: 700 800;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  color-scheme: light dark;
+
+  --brand: hsl(5, 53%, 32%);
+  --brand-deep: hsl(5, 53%, 26%);
+  --brand-tint: hsl(5 53% 32% / 0.08);
+  --brand-tint-strong: hsl(5 53% 32% / 0.14);
+  --brand-line: hsl(5 53% 32% / 0.25);
+  --brand-green: hsl(145, 63%, 22%);
+  --on-brand: hsl(0, 0%, 100%);
+
+  --bg-page: hsl(5, 22%, 96%);
+  --bg-card: hsl(5, 20%, 98%);
+  --bg-elevated: hsl(0, 0%, 100%);
+  --border: hsl(5, 30%, 88%);
+  --border-input: hsl(5, 30%, 80%);
+
+  --ink: hsl(5, 12%, 16%);
+  --body: hsl(0, 0%, 28%);
+  --muted: hsl(0, 0%, 40%);
+
+  /* Status colors. Always pair with an icon and a word, never color alone. */
+  --ok: hsl(145, 63%, 28%);
+  --bad: hsl(0, 65%, 42%);
+  --warn: hsl(38, 80%, 30%);
+  --info: hsl(212, 60%, 40%);
+
+  --font-sans: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-display: "Raleway", var(--font-sans);
+
+  --radius-sm: 0.5rem;
+  --radius-md: 0.875rem;
+  --radius-lg: 1.125rem;
+  --radius-pill: 999px;
+
+  --shadow-sm: 0 1px 2px hsl(5 35% 18% / 0.06), 0 2px 6px hsl(5 35% 18% / 0.05);
+  --shadow-md: 0 2px 4px hsl(5 35% 18% / 0.06), 0 10px 24px hsl(5 35% 18% / 0.08);
+  --shadow-lg: 0 4px 10px hsl(5 35% 18% / 0.07), 0 20px 44px hsl(5 35% 18% / 0.11);
+
+  --focus-ring: 2px solid var(--brand);
+  --transition-fast: 0.15s ease;
+}
+
+/* Dark values are written twice: once for the system setting (unless the user
+   forced light) and once for a forced dark choice. Keep both blocks in sync. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --brand: hsl(6, 68%, 74%);
+    --brand-deep: hsl(6, 78%, 84%);
+    --brand-tint: hsl(6 68% 74% / 0.1);
+    --brand-tint-strong: hsl(6 68% 74% / 0.18);
+    --brand-line: hsl(6 68% 74% / 0.35);
+    --brand-green: hsl(145, 45%, 55%);
+    --on-brand: hsl(5, 40%, 12%);
+
+    --bg-page: hsl(20, 8%, 11%);
+    --bg-card: hsl(20, 7%, 15%);
+    --bg-elevated: hsl(20, 7%, 17%);
+    --border: hsl(20, 7%, 26%);
+    --border-input: hsl(20, 7%, 40%);
+
+    --ink: hsl(30, 12%, 91%);
+    --body: hsl(30, 7%, 78%);
+    --muted: hsl(30, 7%, 68%);
+
+    --ok: hsl(145, 50%, 60%);
+    --bad: hsl(0, 80%, 74%);
+    --warn: hsl(38, 85%, 62%);
+    --info: hsl(206, 80%, 72%);
+
+    --shadow-sm: 0 1px 2px hsl(0 0% 0% / 0.3);
+    --shadow-md: 0 2px 4px hsl(0 0% 0% / 0.3), 0 10px 24px hsl(0 0% 0% / 0.35);
+    --shadow-lg: 0 4px 10px hsl(0 0% 0% / 0.35), 0 20px 44px hsl(0 0% 0% / 0.45);
+  }
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --brand: hsl(6, 68%, 74%);
+  --brand-deep: hsl(6, 78%, 84%);
+  --brand-tint: hsl(6 68% 74% / 0.1);
+  --brand-tint-strong: hsl(6 68% 74% / 0.18);
+  --brand-line: hsl(6 68% 74% / 0.35);
+  --brand-green: hsl(145, 45%, 55%);
+  --on-brand: hsl(5, 40%, 12%);
+
+  --bg-page: hsl(20, 8%, 11%);
+  --bg-card: hsl(20, 7%, 15%);
+  --bg-elevated: hsl(20, 7%, 17%);
+  --border: hsl(20, 7%, 26%);
+  --border-input: hsl(20, 7%, 40%);
+
+  --ink: hsl(30, 12%, 91%);
+  --body: hsl(30, 7%, 78%);
+  --muted: hsl(30, 7%, 68%);
+
+  --ok: hsl(145, 50%, 60%);
+  --bad: hsl(0, 80%, 74%);
+  --warn: hsl(38, 85%, 62%);
+  --info: hsl(206, 80%, 72%);
+
+  --shadow-sm: 0 1px 2px hsl(0 0% 0% / 0.3);
+  --shadow-md: 0 2px 4px hsl(0 0% 0% / 0.3), 0 10px 24px hsl(0 0% 0% / 0.35);
+  --shadow-lg: 0 4px 10px hsl(0 0% 0% / 0.35), 0 20px 44px hsl(0 0% 0% / 0.45);
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+}
