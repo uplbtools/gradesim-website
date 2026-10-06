@@ -287,10 +287,17 @@
   overflow: visible;
 }
 
+/* The map is a lattice: every card is the same height, so card rows line up
+   across terms, and the gaps between columns and between rows are the lanes
+   the prerequisite arrows travel in (src/lib/route-edges.ts). Arrows sharing a
+   gap spread evenly across it, so keep the gaps wide enough for a few lanes. */
 .pl-grid {
+  --pl-col-gap: 36px;
+  --pl-row-gap: 20px;
+  --pl-card-h: 118px;
   display: flex;
   align-items: flex-start;
-  gap: 22px;
+  gap: var(--pl-col-gap);
   width: max-content;
   padding: 4px 2px;
 }
@@ -314,7 +321,8 @@
   flex-direction: column;
   gap: 2px;
   padding: 0 2px 8px;
-  margin-bottom: 8px;
+  /* The first row lane sits between the header and the first card. */
+  margin-bottom: var(--pl-row-gap);
   border-bottom: 2px solid var(--border);
 }
 
@@ -375,7 +383,7 @@
 .pl-cards {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--pl-row-gap);
 }
 
 .pl-empty {
@@ -391,6 +399,9 @@
   display: flex;
   flex-direction: column;
   gap: 2px;
+  height: var(--pl-card-h);
+  box-sizing: border-box;
+  overflow: hidden;
   padding: 7px 9px 8px;
   background: var(--bg-elevated);
   border: 1px solid var(--border);
@@ -455,9 +466,26 @@
   overflow: hidden;
 }
 
+/* At a fixed height the lines keep their size; overflow is clipped, not squeezed. */
+.pl-card > * {
+  flex-shrink: 0;
+}
+
+/* A note (waiting, petition, via) takes the title's second line. */
+.pl-card:has(.pl-note) .pl-title {
+  -webkit-line-clamp: 1;
+}
+
+.pl-card-foot {
+  margin-top: auto; /* foot sits on the card's bottom edge at fixed height */
+}
+
 .pl-offer {
   font-size: 0.68rem;
   color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .pl-crit {
@@ -471,6 +499,9 @@
   align-items: center;
   gap: 4px;
   margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
   font-size: 0.72rem;
   font-weight: 600;
   color: var(--body);
@@ -794,6 +825,11 @@ button.pl-link:hover {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
     gap: 8px;
+  }
+
+  /* No arrows on phones, so cards size to their content. */
+  .pl-card {
+    height: auto;
   }
 
   .pl-detail {

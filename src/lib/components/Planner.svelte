@@ -28,6 +28,7 @@
 		type PlannerInput,
 		type WhatIfMode
 	} from '#lib/planner.ts';
+	import { routeEdges, type Rect } from '#lib/route-edges.ts';
 	import { preGroups } from '#lib/scheduler.ts';
 	import { buildPlannerSheets, writeXlsx } from '#lib/xlsx.ts';
 	import Icon, { type IconName } from './Icon.svelte';
@@ -110,7 +111,11 @@
 			svgSize = { w: grid.scrollWidth, h: grid.scrollHeight };
 			const nodeOf = (code: string) => grid.querySelector<HTMLElement>(`.pl-card[data-primary][data-code="${CSS.escape(code)}"]`);
 			const crit = (code: string) => isCritical(code, v);
-			const out: { d: string; kind: string }[] = [];
+			const rect = (el: HTMLElement): Rect => {
+				const r = el.getBoundingClientRect();
+				return { x: r.left - gridRect.left, y: r.top - gridRect.top, w: r.width, h: r.height };
+			};
+			const drawn: { kind: string; from: Rect; to: Rect }[] = [];
 			v.model.graph.edges.forEach(({ from, to }) => {
 				let kind: string | null = null;
 				if (ch) {
@@ -123,17 +128,16 @@
 				const a = nodeOf(from);
 				const b = nodeOf(to);
 				if (!a || !b || a.closest('details:not([open])') || b.closest('details:not([open])')) return;
-				const ra = a.getBoundingClientRect();
-				const rb = b.getBoundingClientRect();
-				if (ra.right > rb.left) return; // same column or backwards: coreq-like, skip
-				const x1 = ra.right - gridRect.left;
-				const y1 = ra.top + ra.height / 2 - gridRect.top;
-				const x2 = rb.left - gridRect.left;
-				const y2 = rb.top + rb.height / 2 - gridRect.top;
-				const dx = Math.max(24, (x2 - x1) / 2);
-				out.push({ kind, d: `M ${x1} ${y1} C ${x1 + dx} ${y1}, ${x2 - dx} ${y2}, ${x2 - 4} ${y2}` });
+				const ra = rect(a);
+				const rb = rect(b);
+				if (ra.x + ra.w > rb.x) return; // same column or backwards: coreq-like, skip
+				drawn.push({ kind, from: ra, to: rb });
 			});
-			paths = out;
+			// Arrows travel the lattice gaps like routed cables (route-edges.ts).
+			const css = getComputedStyle(grid);
+			const colGap = parseFloat(css.getPropertyValue('--pl-col-gap')) || 36;
+			const rowGap = parseFloat(css.getPropertyValue('--pl-row-gap')) || 20;
+			paths = routeEdges(drawn, { colGap, rowGap }).map(({ d }, i) => ({ d, kind: drawn[i].kind }));
 		});
 		return () => cancelAnimationFrame(frame);
 	});
