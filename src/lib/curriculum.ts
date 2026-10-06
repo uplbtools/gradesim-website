@@ -13,6 +13,21 @@ export interface Track {
 	majorElectiveUnits?: number;
 }
 
+/** Courses from one pool of a specialization fill these MAJ slots, one each. */
+export interface SpecializationPool {
+	name: string;
+	slots: string[];
+	courses: string[];
+}
+
+/** A field of specialization or track the catalog lists for a program. */
+export interface Specialization {
+	name: string;
+	source: string;
+	note?: string;
+	pools: SpecializationPool[];
+}
+
 export interface Program {
 	code: string;
 	name: string;
@@ -25,6 +40,7 @@ export interface Program {
 	nstpCoursesRequired?: number;
 	tracks?: Record<string, Track> | null;
 	defaultTrack?: string;
+	specializations?: Record<string, Specialization>;
 	majorCourses: ChecklistCourse[];
 	requiredCodes?: string[];
 }
@@ -200,8 +216,47 @@ export function freeElectiveCourses(program: WithTracks | null | undefined, trac
 	return courses;
 }
 
-export function getPlannerCourses(program: WithTracks | null | undefined, track?: string | null): ChecklistCourse[] {
-	return [...trackCourses(program, track), ...genericRequirementCourses(program), ...freeElectiveCourses(program, track)];
+/** A known specialization key for the program, else null. */
+export function resolveSpecialization(program: Pick<Program, 'specializations'> | null | undefined, key?: string | null): string | null {
+	return key && program?.specializations?.[key] ? key : null;
+}
+
+/**
+ * A specialization fills the program's MAJ slots from its pools. A pool with
+ * one course per slot puts those courses in the slots. A pool with more
+ * courses than slots keeps the slots and lists the courses as options.
+ */
+export function applySpecialization(
+	rows: ChecklistCourse[],
+	program: Pick<Program, 'specializations'> | null | undefined,
+	key?: string | null
+): ChecklistCourse[] {
+	const spec = key ? program?.specializations?.[key] : undefined;
+	if (!spec) return rows;
+	const bySlot = new Map<string, { pool: SpecializationPool; i: number }>();
+	spec.pools.forEach((pool) => pool.slots.forEach((slot, i) => bySlot.set(slot, { pool, i })));
+	return rows.map((row) => {
+		const hit = bySlot.get(row.code);
+		if (!hit) return row;
+		const { pool, i } = hit;
+		// Title, prerequisites and offerings come from the catalog.
+		if (pool.courses.length === pool.slots.length) {
+			return { code: pool.courses[i], title: '', units: row.units, year: row.year, sem: row.sem, prereqs: [] };
+		}
+		return { ...row, title: `${pool.name}, ${spec.name}`, options: pool.courses };
+	});
+}
+
+export function getPlannerCourses(
+	program: (WithTracks & Pick<Program, 'specializations'>) | null | undefined,
+	track?: string | null,
+	specialization?: string | null
+): ChecklistCourse[] {
+	return [
+		...applySpecialization(trackCourses(program, track), program, specialization),
+		...genericRequirementCourses(program),
+		...freeElectiveCourses(program, track)
+	];
 }
 
 type Done = { code?: string; courseCode?: string; title?: string; courseTitle?: string };

@@ -38,6 +38,8 @@ export interface ChecklistCourse {
 	catalogSem?: string | null;
 	track?: string;
 	gradeType?: string;
+	/** A specialization slot: only these courses fill it. */
+	options?: string[];
 }
 
 /** A course the scheduler can place. */

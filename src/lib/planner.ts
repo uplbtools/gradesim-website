@@ -2,7 +2,7 @@
 // Everything here is pure: Planner.svelte renders what these return.
 
 import { UPLB_CATALOG } from './catalog.ts';
-import { detectTrack, resolveTrack, UPLB_PROGRAMS, type Program } from './curriculum.ts';
+import { detectTrack, resolveSpecialization, resolveTrack, UPLB_PROGRAMS, type Program } from './curriculum.ts';
 import { ayOfAbs, termKeyToAbs, type GradesData } from './grades.ts';
 import {
 	amisCourses,
@@ -76,6 +76,8 @@ export interface Model {
 	program: Program;
 	/** The track the plan follows, or null for programs without tracks. */
 	track: string | null;
+	/** The specialization key the plan follows, or null. */
+	specialization: string | null;
 	courses: PlanCourse[];
 	byCode: Map<string, PlanCourse>;
 	graph: Graph;
@@ -95,18 +97,20 @@ export function planTrack(program: Program, gradesData: GradesData | null | unde
 
 const models = new Map<string, Model>();
 
-/** The program's courses for a track merged with the catalog, plus its prerequisite graph. Cached per program and track. */
-export function modelFor(code: string, chosenTrack: string | null = null): Model | null {
+/** The program's courses for a track and specialization merged with the catalog, plus its prerequisite graph. Cached per program, track and specialization. */
+export function modelFor(code: string, chosenTrack: string | null = null, chosenSpecialization: string | null = null): Model | null {
 	const program = UPLB_PROGRAMS[code];
 	if (!program || !program.majorCourses) return null;
 	const track = resolveTrack(program, chosenTrack);
-	const key = `${code}:${track}`;
+	const specialization = resolveSpecialization(program, chosenSpecialization);
+	const key = `${code}:${track}:${specialization}`;
 	if (!models.has(key)) {
-		const courses = plannerCourseList(program, track, UPLB_CATALOG);
+		const courses = plannerCourseList(program, track, UPLB_CATALOG, specialization);
 		models.set(key, {
 			code,
 			program,
 			track,
+			specialization,
 			courses,
 			byCode: new Map(courses.map((c) => [c.code, c])),
 			graph: analyzeGraph(courses)

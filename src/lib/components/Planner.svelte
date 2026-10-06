@@ -2,6 +2,7 @@
 	import { onMount, tick } from 'svelte';
 	import { app, download } from '#lib/app.svelte.ts';
 	import { parseImport } from '#lib/importers.ts';
+	import { UPLB_CATALOG } from '#lib/catalog.ts';
 	import { getProgramDataQuality, UPLB_PROGRAMS } from '#lib/curriculum.ts';
 	import {
 		absLabel,
@@ -36,7 +37,7 @@
 	import StatusLabel from './StatusLabel.svelte';
 	import './planner.css';
 
-	const model = $derived(modelFor(app.s.selectedProgram, planTrack(app.program, app.s.gradesData, app.s.track)));
+	const model = $derived(modelFor(app.s.selectedProgram, planTrack(app.program, app.s.gradesData, app.s.track), app.specialization));
 	const quality = $derived(getProgramDataQuality(app.s.selectedProgram));
 	const options = $derived(app.s.plannerOptions ?? DEFAULT_PLANNER_OPTIONS);
 	const input = $derived<PlannerInput>({
@@ -328,6 +329,14 @@
 					{/if}
 				{/if}
 			</ul>
+			{#if c.options}
+				<h4>Take one of these</h4>
+				<ul class="pl-reqs">
+					{#each c.options as o (o)}
+						<li><strong>{o}</strong> {UPLB_CATALOG[o]?.title.replace(/\.$/, '') ?? ''}{view.passed.has(o) ? ', passed' : ''}</li>
+					{/each}
+				</ul>
+			{/if}
 			<h4>Requires</h4>
 			{#if preGroups(c).length || c.co?.length || c.standing || c.coi || c.note}
 				<ul class="pl-reqs">
@@ -435,6 +444,17 @@
 							<option value="21">21 units (with lab courses)</option>
 						</select>
 					</label>
+					{#if app.program.specializations}
+						<label class="pl-menu-item">
+							Specialization
+							<select class="select" value={app.specialization ?? ''} onchange={(e) => app.setSpecialization(e.currentTarget.value)}>
+								<option value="">Not chosen yet</option>
+								{#each Object.entries(app.program.specializations) as [key, s] (key)}
+									<option value={key}>{s.name}</option>
+								{/each}
+							</select>
+						</label>
+					{/if}
 					<label class="pl-menu-item pl-check"><input type="checkbox" checked={options.midyear} onchange={(e) => setOptions({ midyear: e.currentTarget.checked })} /> Take classes in midyear</label>
 					<label class="pl-menu-item pl-check"><input type="checkbox" checked={options.midyear9} onchange={(e) => setOptions({ midyear9: e.currentTarget.checked })} /> Midyear up to 9 units (Dean's approval)</label>
 					<button type="button" class="pl-menu-item" onclick={savePlan}>Save plan<small>Download your marks, moves and options as a file</small></button>

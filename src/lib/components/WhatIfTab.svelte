@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { app } from '#lib/app.svelte.ts';
+	import { UPLB_CATALOG } from '#lib/catalog.ts';
 	import { detectTrack, getProgramDataQuality } from '#lib/curriculum.ts';
 	import { HONORS } from '#lib/grades.ts';
 	import { modelFor, planTrack } from '#lib/planner.ts';
@@ -13,7 +14,7 @@
 	const track = $derived(planTrack(app.program, app.s.gradesData, app.s.track));
 	const quality = $derived(getProgramDataQuality(app.program.code));
 	const left = $derived.by(() => {
-		const model = app.program.available ? modelFor(app.program.code, track) : null;
+		const model = app.program.available ? modelFor(app.program.code, track, app.specialization) : null;
 		if (!model) return null;
 		return remainingRequirements(
 			model.courses,
@@ -22,6 +23,9 @@
 		);
 	});
 	const tracks = $derived(app.program.tracks ? Object.entries(app.program.tracks) : []);
+	const specs = $derived(app.program.specializations ? Object.entries(app.program.specializations) : []);
+	const spec = $derived(app.specialization ? app.program.specializations![app.specialization] : null);
+	const passedCodes = $derived(new Set(rows.filter((r) => r.result === 'passed').map((r) => r.code)));
 	const g = $derived(app.gwa);
 
 	// Start on the best honor still in reach, or cum laude.
@@ -180,6 +184,41 @@
 					{/if}
 				</details>
 			{/if}
+
+			{#if specs.length}
+				<details class="track" open>
+					<summary>Specialization</summary>
+					<label class="field">
+						Field of specialization
+						<select class="select" value={app.specialization ?? ''} onchange={(e) => app.setSpecialization(e.currentTarget.value)}>
+							<option value="">Not chosen yet</option>
+							{#each specs as [key, s] (key)}
+								<option value={key}>{s.name}</option>
+							{/each}
+						</select>
+					</label>
+					{#if spec}
+						{#each spec.pools as pool (pool.name)}
+							<h3 class="pool">{pool.name}</h3>
+							<p class="muted small">
+								{pool.courses.length > pool.slots.length ? `Take ${pool.slots.length} of these ${pool.courses.length}.` : `Take all ${pool.courses.length}.`}
+							</p>
+							<dl>
+								{#each pool.courses as code (code)}
+									<div>
+										<dt>{code} <span class="muted">{UPLB_CATALOG[code]?.title.replace(/\.$/, '') ?? ''}</span></dt>
+										<dd>{passedCodes.has(code) ? 'Passed' : `${UPLB_CATALOG[code]?.units ?? 3} units`}</dd>
+									</div>
+								{/each}
+							</dl>
+						{/each}
+						{#if spec.note}<p class="muted small">{spec.note}</p>{/if}
+						<p class="muted small">From the {spec.source}.</p>
+					{:else}
+						<p class="muted small">Pick yours to see its courses. They fill the matching slots in your checklist.</p>
+					{/if}
+				</details>
+			{/if}
 		</section>
 	{/if}
 </div>
@@ -306,6 +345,11 @@
 		font-weight: 650;
 		color: var(--ink);
 		margin-bottom: 8px;
+	}
+
+	.pool {
+		font-size: 0.95rem;
+		margin: 14px 0 2px;
 	}
 
 	.tracks {

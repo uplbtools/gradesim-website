@@ -18,9 +18,18 @@ test('accepts a bare AMIS grades response', () => {
 });
 
 test('round-trips its own backup', () => {
-	const file = makeBackup({ gradesData: backup.gradesData as GradesData, selectedProgram: 'BSBIO', excludedCourses: ['3'], substitutions: { 'MATH 27': 'STAT 101' } });
+	const file = makeBackup({
+		gradesData: backup.gradesData as GradesData,
+		selectedProgram: 'BSBIO',
+		excludedCourses: ['3'],
+		substitutions: { 'MATH 27': 'STAT 101' },
+		selectedSpecializations: { BSAAE: 'amp' }
+	});
 	const r = parseImport(JSON.stringify(file));
-	expect(r).toMatchObject({ kind: 'grades', patch: { selectedProgram: 'BSBIO', excludedCourses: ['3'], substitutions: { 'MATH 27': 'STAT 101' } } });
+	expect(r).toMatchObject({
+		kind: 'grades',
+		patch: { selectedProgram: 'BSBIO', excludedCourses: ['3'], substitutions: { 'MATH 27': 'STAT 101' }, selectedSpecializations: { BSAAE: 'amp' } }
+	});
 });
 
 test('rejects junk with a readable reason', () => {
