@@ -53,7 +53,7 @@
 		// ?program=BSCHEM from the curricula page picks the program, then the URL is tidied.
 		const url = new URL(location.href);
 		const program = url.searchParams.get('program');
-		if (program && UPLB_PROGRAMS[program]) {
+		if (program && UPLB_PROGRAMS[program]?.available) {
 			app.s.selectedProgram = program;
 			url.searchParams.delete('program');
 			history.replaceState(history.state, '', url.pathname + url.search + url.hash);

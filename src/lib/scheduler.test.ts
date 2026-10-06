@@ -4,6 +4,7 @@ import {
 	analyzeGraph,
 	combineRequisites,
 	computeSlips,
+	DEFAULT_UNIT_CAPS,
 	enrichCourses,
 	extractCode,
 	offeredIn,
@@ -213,4 +214,23 @@ const C = (code: string, units: number, sem?: string, prereqs: string[] = []): P
 	], cat);
 	deq(en.map(c => c.code), ['CHEM 18', 'PI 10', 'CE 151', 'GE', 'GE (2)']);
 	deq(en.find(c => c.code === 'CE 151')!.pre, [['CHEM 18']]);
+
+	// Catalog units beat garbled checklist units; SP and thesis keep theirs.
+	const units = enrichCourses([
+	  { code: 'CHEM 18', title: 'University Chemistry', units: 51, year: 1, sem: '1' },
+	  { code: 'CE 200', title: 'Thesis', units: 6, year: 4, sem: '1' },
+	  { code: 'CE 151', title: 'Sanitary', units: 3, year: 3, sem: '1' },
+	], { ...cat, 'CE 200': { units: 1, title: 'Thesis' } });
+	deq(units.map(c => c.units), [3, 6, 3]);
+
+	// A course AMIS only offers in midyear still gets placed when midyear is off.
+	const midOnly = scheduleEarliest({
+	  courses: [{ code: 'BA 183', title: 'BA 183', units: 3, sem: '1', prereqs: [], offered: { 1: 0, 2: 0, 3: 2 } }],
+	  passed: new Set<string>(), useMidyear: false,
+	});
+	deq(midOnly.unschedulable, []);
+	eq(midOnly.assignedTerm['BA 183'], 2);
+
+	// Default cap matches the catalog load rule: 18 a regular sem, 6 midyear.
+	deq(DEFAULT_UNIT_CAPS, { '1': 18, '2': 18, midyear: 6 });
 });

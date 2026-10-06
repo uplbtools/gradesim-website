@@ -1,49 +1,108 @@
 <script lang="ts">
 	import { app } from '#lib/app.svelte.ts';
-	import { HONORS, remainingFor, whatIf } from '#lib/grades.ts';
+	import { detectTrack, getProgramDataQuality } from '#lib/curriculum.ts';
+	import { HONORS } from '#lib/grades.ts';
+	import { modelFor, planTrack } from '#lib/planner.ts';
+	import { amisCourses, gwaOutlook, remainingRequirements } from '#lib/requirements.ts';
 	import Icon from './Icon.svelte';
 	import Notice from './Notice.svelte';
 
-	let choice = $state<string>('1.75');
-	let custom = $state('');
+	// Counts come from requirements.ts, the same code the planner uses, so both show the same units left.
+	const rows = $derived(amisCourses(app.s.gradesData));
+	const detected = $derived(detectTrack(app.program, rows));
+	const track = $derived(planTrack(app.program, app.s.gradesData, app.s.track));
+	const quality = $derived(getProgramDataQuality(app.program.code));
+	const left = $derived.by(() => {
+		const model = app.program.available ? modelFor(app.program.code, track) : null;
+		if (!model) return null;
+		return remainingRequirements(
+			model.courses,
+			rows.filter((r) => r.result === 'passed'),
+			{ substitutions: app.s.substitutions, overrides: app.s.customCourseStatus }
+		);
+	});
+	const tracks = $derived(app.program.tracks ? Object.entries(app.program.tracks) : []);
+	const g = $derived(app.gwa);
 
+	// Start on the best honor still in reach, or cum laude.
+	let picked = $state<string | null>(null);
+	let custom = $state('');
+	const startHonor = $derived(left ? gwaOutlook(g.gwa, g.totalUnits, left.gwaUnits, 1.75).bestHonor : null);
+	const choice = $derived(picked ?? String(startHonor ? startHonor[1] : 1.75));
 	const target = $derived(choice === 'custom' ? parseFloat(custom) : parseFloat(choice));
 	const validTarget = $derived(target >= 1 && target <= 5);
-	const rem = $derived(remainingFor(app.program, app.gwa.completedCourses, app.s.substitutions, app.s.track));
-	const result = $derived(validTarget ? whatIf(target, app.gwa.gwa, app.gwa.totalUnits, rem.remainingUnits) : null);
-	const targetName = $derived(HONORS.find((h) => h.max === target)?.name ?? `a GWA of ${validTarget ? target.toFixed(2) : '?'}`);
-	const tracks = $derived(app.program.tracks ? Object.entries(app.program.tracks) : []);
+	const targetName = $derived(HONORS.find((h) => h.max === target)?.name ?? `A GWA of ${validTarget ? target.toFixed(2) : '?'}`);
 
-	const verdict = $derived.by(() => {
-		if (!result) return null;
-		switch (result.status) {
-			case 'achieved':
-				return { tone: 'ok', icon: 'check', text: `You are already within ${targetName}. Keep your grades where they are.` } as const;
-			case 'impossible-low':
-				return { tone: 'bad', icon: 'x', text: `${targetName} is out of reach. It would take an average better than 1.00 (${result.required.toFixed(2)}) on what is left.` } as const;
-			case 'impossible-high':
-				return { tone: 'bad', icon: 'x', text: `${targetName} is not reachable with the units you have left.` } as const;
-			default: {
-				const how = { excellent: 'with excellent grades', good: 'with very good grades', moderate: 'with good grades', difficult: 'and it is a stretch' }[result.effort!];
-				return { tone: result.effort === 'difficult' ? 'warn' : 'ok', icon: result.effort === 'difficult' || result.effort === 'moderate' ? 'alert' : 'check', text: `${targetName} is reachable ${how}.` } as const;
-			}
-		}
+	// The newest failed course not passed since, for the planner link.
+	const openFailure = $derived.by(() => {
+		const passed = new Set(rows.filter((r) => r.result === 'passed').map((r) => r.code));
+		const failed = rows.filter((r) => r.result === 'failed' && !passed.has(r.code));
+		return failed.length ? failed[failed.length - 1].code : null;
 	});
+
+	const answer = $derived.by(() => {
+		if (!left || !validTarget) return null;
+		const o = gwaOutlook(g.gwa, g.totalUnits, left.gwaUnits, target);
+		if (o.status === 'out-of-reach') {
+			const best = o.bestHonor && gwaOutlook(g.gwa, g.totalUnits, left.gwaUnits, o.bestHonor[1]);
+			const rest = best
+				? `${o.bestHonor![0]} is still possible ${best.status === 'any-pass' ? 'if you pass everything' : `with an average of ${best.required!.toFixed(2)} or better`}.`
+				: 'No Latin honor is in reach now, but every grade better than your GWA still raises it.';
+			return {
+				label: 'Best GWA still possible',
+				value: o.ceiling.toFixed(2),
+				note: 'with 1.00 in every course left',
+				tone: 'bad',
+				text: `${targetName} is out of reach. ${rest}`,
+				failure: openFailure
+			} as const;
+		}
+		if (o.status === 'any-pass') {
+			const name = targetName.toLowerCase();
+			return {
+				label: 'Average you need',
+				value: '3.00',
+				note: 'any passing grade',
+				tone: 'ok',
+				text: g.gwa > 0 && g.gwa <= target ? `You are at ${name} now. Pass every course left and you keep it.` : `Pass every course left and you reach ${name}.`,
+				failure: null
+			} as const;
+		}
+		const r = o.required!;
+		const how = r <= 1.25 ? 'excellent grades' : r <= 1.75 ? 'very good grades' : r <= 2.5 ? 'good grades' : 'grades a little better than passing';
+		return {
+			label: 'Average you need',
+			value: r.toFixed(2),
+			note: `on your ${left.gwaUnits} GWA units left`,
+			tone: r <= 1.75 ? 'warn' : 'ok',
+			text: `${targetName} is in reach with ${how}.`,
+			failure: null
+		} as const;
+	});
+
+	function seeCost(code: string) {
+		app.whatif = { code, mode: 'fail' };
+		location.hash = 'planner';
+	}
 </script>
 
 <div class="whatif">
+	{#if !quality.confident}
+		<Notice tone="warn"><strong>Treat these numbers as a rough guide.</strong> {quality.reasons.join(' ')}</Notice>
+	{/if}
+
 	<section class="card" aria-labelledby="target-title">
 		<h2 id="target-title" class="h">What GWA are you aiming for?</h2>
 		<div class="targets" role="radiogroup" aria-labelledby="target-title">
 			{#each HONORS as h (h.key)}
 				<label class="target" class:on={choice === String(h.max)}>
-					<input type="radio" name="target" value={String(h.max)} bind:group={choice} />
+					<input type="radio" name="target" value={String(h.max)} checked={choice === String(h.max)} onchange={() => (picked = String(h.max))} />
 					<span class="tname">{h.name}</span>
 					<span class="tmax">GWA {h.max.toFixed(2)} or better</span>
 				</label>
 			{/each}
 			<label class="target" class:on={choice === 'custom'}>
-				<input type="radio" name="target" value="custom" bind:group={choice} />
+				<input type="radio" name="target" value="custom" checked={choice === 'custom'} onchange={() => (picked = 'custom')} />
 				<span class="tname">Your own target</span>
 				<input
 					class="input custom"
@@ -54,7 +113,7 @@
 					placeholder="1.50"
 					aria-label="Custom target GWA"
 					bind:value={custom}
-					onfocus={() => (choice = 'custom')}
+					onfocus={() => (picked = 'custom')}
 				/>
 			</label>
 		</div>
@@ -62,70 +121,67 @@
 
 	<section class="card result" aria-live="polite" aria-labelledby="result-title">
 		<h2 id="result-title" class="h">What you need</h2>
-		{#if !validTarget}
+		{#if !left}
+			<Notice tone="info">GradeSim does not have the {app.program.name} checklist yet, so it cannot count your remaining units. Your GWA above still works.</Notice>
+		{:else if !validTarget}
 			<p class="muted">Enter a target GWA from 1.00 to 5.00.</p>
-		{:else if result && verdict}
-			<p class="verdict {verdict.tone}"><Icon name={verdict.icon} />{verdict.text}</p>
+		{:else if answer}
+			<div class="big">
+				<span class="label">{answer.label}</span>
+				<span class="value" data-testid="required">{answer.value}</span>
+				<span class="muted small">{answer.note}</span>
+			</div>
+			<Notice tone={answer.tone}>
+				{answer.text}
+				{#snippet action()}
+					{#if answer.failure}
+						{@const code = answer.failure}
+						<button class="textbtn" type="button" aria-label="See what failing {code} costs in the planner" onclick={() => seeCost(code)}>See what this costs</button>
+					{/if}
+				{/snippet}
+			</Notice>
 			<dl>
-				<div><dt>Current GWA</dt><dd>{app.gwa.gwa > 0 ? app.gwa.gwa.toFixed(4) : 'None yet'}</dd></div>
+				<div><dt>Current GWA</dt><dd>{g.gwa > 0 ? g.gwa.toFixed(4) : 'None yet'}</dd></div>
 				<div><dt>Target</dt><dd>{target.toFixed(2)} or better</dd></div>
-				<div><dt>Units done</dt><dd>{app.gwa.totalUnits}</dd></div>
-				<div><dt>Units left</dt><dd>{rem.remainingUnits}</dd></div>
-				<div class="big">
-					<dt>Average you need on the rest</dt>
-					<dd data-testid="required">{result.status === 'achieved' ? 'Stay the course' : result.status === 'possible' ? result.required.toFixed(4) : 'Not possible'}</dd>
-				</div>
+				<div><dt>GWA units so far</dt><dd>{g.totalUnits}</dd></div>
+				<div><dt>GWA units left</dt><dd>{left.gwaUnits}</dd></div>
 			</dl>
-			<p class="muted small">This is an estimate from your checklist. It assumes 3 units per missing GE course and counts the free electives your track still needs.</p>
 		{/if}
 	</section>
 
-	{#if tracks.length}
-		<section class="card" aria-labelledby="track-title">
-			<h2 id="track-title" class="h">Your track</h2>
-			{#if rem.detectedTrack}
-				<Notice tone="ok">Detected from your grades as {app.program.tracks![rem.detectedTrack].name} ({app.program.tracks![rem.detectedTrack].code}).</Notice>
-			{:else}
-				<div class="tracks" role="radiogroup" aria-label="Track">
-					{#each tracks as [key, t] (key)}
-						<label class="check">
-							<input type="radio" name="track" value={key} checked={rem.track === key} onchange={() => (app.s.track = key)} />
-							<span><strong>{t.name}</strong> <span class="muted">{t.code}, {t.freeElectiveUnits} free elective units</span></span>
-						</label>
-					{/each}
-				</div>
+	{#if left}
+		<section class="card" aria-labelledby="rem-title">
+			<h2 id="rem-title" class="h">Left to take for {app.program.name}</h2>
+			<dl>
+				<div><dt>Courses</dt><dd>{left.left.length}</dd></div>
+				<div><dt>Units</dt><dd data-testid="units-left">{left.units}</dd></div>
+				<div><dt>GE courses done</dt><dd>{left.ge.done} of {left.ge.total}</dd></div>
+				{#if left.electives.totalUnits > 0}
+					<div><dt>Free elective units done</dt><dd>{left.electives.doneUnits} of {left.electives.totalUnits}</dd></div>
+				{/if}
+			</dl>
+			<a class="btn btn-secondary" href="#planner"><Icon name="planned" />See them in the planner</a>
+
+			{#if tracks.length}
+				<details class="track">
+					<summary>Track</summary>
+					{#if detected}
+						<Notice tone="ok">Your grades show the {app.program.tracks![detected].name} ({app.program.tracks![detected].code}).</Notice>
+					{:else}
+						<Notice tone="warn">No SP or thesis course in your grades yet, so GradeSim assumes {app.program.tracks![track!].name} ({app.program.tracks![track!].code}). Pick yours below.</Notice>
+						<div class="tracks" role="radiogroup" aria-label="Track">
+							{#each tracks as [key, t] (key)}
+								<label class="check">
+									<input type="radio" name="track" value={key} checked={track === key} onchange={() => (app.s.track = key)} />
+									<span><strong>{t.name}</strong> <span class="muted">{t.code}, {t.freeElectiveUnits} free elective units</span></span>
+								</label>
+							{/each}
+						</div>
+					{/if}
+				</details>
 			{/if}
 		</section>
 	{/if}
-
-	<section class="card" aria-labelledby="rem-title">
-		<h2 id="rem-title" class="h">Still to take for {app.program.name}</h2>
-		{#if rem.remaining.length}
-			<ul class="rem">
-				{#each rem.remaining as c (c.code)}
-					<li><span class="code">{c.code}</span><span class="units">{c.units}u</span></li>
-				{/each}
-			</ul>
-		{:else}
-			<Notice tone="ok">Every required course on the checklist is done.</Notice>
-		{/if}
-		<ul class="notes">
-			<li>
-				{#if rem.remainingGESlots > 0}
-					<strong>{rem.remainingGESlots} more GE {rem.remainingGESlots === 1 ? 'course' : 'courses'}</strong> needed. You have {rem.completedGECount} of {rem.geRequired}.
-				{:else}
-					<strong>GE courses are complete</strong> ({rem.completedGECount} of {rem.geRequired}).
-				{/if}
-			</li>
-			<li>
-				{#if rem.freeElectiveUnitsRemaining > 0}
-					<strong>{rem.freeElectiveUnitsRemaining} free elective units</strong> left. You have {rem.freeElectiveUnitsTaken} of {rem.freeElectiveUnitsTotal}.
-				{:else}
-					<strong>Free electives are complete</strong> ({rem.freeElectiveUnitsTaken} of {rem.freeElectiveUnitsTotal} units).
-				{/if}
-			</li>
-		</ul>
-	</section>
 </div>
 
 <style>
@@ -193,28 +249,28 @@
 		min-height: 38px;
 	}
 
-	.verdict {
+	.big {
 		display: flex;
-		gap: 8px;
-		align-items: flex-start;
+		flex-direction: column;
+		gap: 2px;
+		margin-bottom: 12px;
+		padding: 12px 14px;
+		border-radius: var(--radius-sm);
+		background: var(--brand-tint);
+	}
+
+	.big .label {
+		font-size: 0.78rem;
 		font-weight: 600;
+		color: var(--muted);
+	}
+
+	.big .value {
+		font-family: var(--font-display);
+		font-size: 2rem;
+		font-weight: 700;
 		color: var(--ink);
-	}
-
-	.verdict :global(.icon) {
-		margin-top: 3px;
-	}
-
-	.verdict.ok :global(.icon) {
-		color: var(--ok);
-	}
-
-	.verdict.bad :global(.icon) {
-		color: var(--bad);
-	}
-
-	.verdict.warn :global(.icon) {
-		color: var(--warn);
+		font-variant-numeric: tabular-nums;
 	}
 
 	dl {
@@ -237,67 +293,25 @@
 		font-variant-numeric: tabular-nums;
 	}
 
-	.big {
-		grid-column: 1 / -1;
-		padding: 12px 14px;
-		border-radius: var(--radius-sm);
-		background: var(--brand-tint);
-	}
-
-	.big dd {
-		font-family: var(--font-display);
-		font-size: 1.8rem;
-	}
-
 	.small {
 		font-size: 0.82rem;
+	}
+
+	.track {
+		margin-top: 16px;
+	}
+
+	.track summary {
+		cursor: pointer;
+		font-weight: 650;
+		color: var(--ink);
+		margin-bottom: 8px;
 	}
 
 	.tracks {
 		display: flex;
 		flex-direction: column;
-	}
-
-	.rem {
-		list-style: none;
-		padding: 0;
-		display: flex;
-		flex-wrap: wrap;
-		gap: 6px;
-	}
-
-	.rem li {
-		display: inline-flex;
-		align-items: center;
-		gap: 6px;
-		padding: 4px 6px 4px 10px;
-		border: 1px solid var(--border);
-		border-radius: var(--radius-pill);
-		background: var(--bg-card);
-	}
-
-	.rem .code {
-		font-weight: 650;
-		font-size: 0.88rem;
-		color: var(--ink);
-	}
-
-	.units {
-		font-size: 0.74rem;
-		font-weight: 600;
-		padding: 0 6px;
-		border-radius: var(--radius-pill);
-		background: var(--brand-tint);
-	}
-
-	.notes {
-		margin-top: 14px;
-		padding-left: 1.1rem;
-		font-size: 0.92rem;
-	}
-
-	.notes li + li {
-		margin-top: 4px;
+		margin-top: 8px;
 	}
 
 	@media (min-width: 900px) {
@@ -306,8 +320,8 @@
 			align-items: start;
 		}
 
-		.whatif > :first-child,
-		.whatif > :last-child {
+		.whatif > :global(.notice),
+		.whatif > section:first-of-type {
 			grid-column: 1 / -1;
 		}
 	}

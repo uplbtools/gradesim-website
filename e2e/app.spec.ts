@@ -57,7 +57,8 @@ test('manual entry: add courses by hand and the GWA shows', async ({ page }) => 
 test('JSON import from the extension backup', async ({ page }) => {
 	await importFixture(page);
 	await expect(page.getByRole('status').first()).toContainText('Imported 15 courses');
-	await expect(page.getByText('Honor Roll track')).toBeVisible();
+	// 1.9773 is on no Latin honor track, and Honor Roll is not one.
+	await expect(page.getByText(/Honor Roll|Cum Laude track/)).toHaveCount(0);
 	await expect(page.getByRole('region', { name: '1st sem AY 2023-24' })).toContainText('MATH 27');
 });
 
@@ -77,6 +78,22 @@ test('planner renders and a failed course shows a retake', async ({ page }) => {
 	await grid.locator('.pl-card.st-retake[data-code="MATH 27"]').click();
 	await expect(page.getByRole('complementary', { name: 'Details for MATH 27' })).toContainText('Analytic Geometry');
 	await expect(page).toHaveURL(/#planner$/);
+});
+
+test('What if and the planner count the same units left', async ({ page }) => {
+	await importFixture(page);
+	await page.getByRole('tab', { name: 'What if' }).click();
+	await expect(page.getByTestId('required')).toBeVisible();
+	const units = (await page.getByTestId('units-left').textContent())!.trim();
+	await page.getByRole('link', { name: 'See them in the planner' }).click();
+	await expect(page.getByText(`You have ${units} units left to pass`)).toBeVisible();
+});
+
+test('programs without a checklist show as coming soon', async ({ page }) => {
+	await importFixture(page);
+	const option = page.getByRole('combobox', { name: 'Your degree program' }).locator('option[value="BSMST"]');
+	await expect(option).toHaveAttribute('disabled');
+	await expect(option).toContainText('coming soon');
 });
 
 test('theme toggle cycles and persists', async ({ page }) => {

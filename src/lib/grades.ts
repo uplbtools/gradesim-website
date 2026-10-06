@@ -3,13 +3,7 @@
 // math is pure and the Svelte components render the results.
 
 import { UPLB_CATALOG } from './catalog.ts';
-import {
-	countCompletedGE,
-	detectTrack,
-	getFreeElectiveUnits,
-	isGECourse,
-	type Program
-} from './curriculum.ts';
+import { isGECourse, isNonGwaCourseCode, type Program } from './curriculum.ts';
 
 /* ---------- AMIS grades API shape ---------- */
 
@@ -38,12 +32,13 @@ export type SemNo = 1 | 2 | 3;
 
 /**
  * Absolute term number: academic year start * 3 + (0 = 1st sem, 1 = 2nd,
- * 2 = midyear). AMIS term ids are 12<year digit><term digit> (1251 = AY
- * 2025-26 1st sem); terms added by hand use "<year>-<term>" (2019-1).
+ * 2 = midyear). AMIS term ids are 1, a two digit year, then the term (1251
+ * is AY 2025-26 1st sem and 1303 is the AY 2030-31 midyear). Terms added by
+ * hand use "<year>-<term>" (2019-1).
  */
-export function termKeyToAbs(key: string): number | null {
-	let m = String(key).match(/^12(\d)([123])$/);
-	if (m) return (2020 + Number(m[1])) * 3 + Number(m[2]) - 1;
+export function termKeyToAbs(key: string | number): number | null {
+	let m = String(key).match(/^1(\d\d)([123])$/);
+	if (m) return (2000 + Number(m[1])) * 3 + Number(m[2]) - 1;
 	m = String(key).match(/^(\d{4})-([123])$/);
 	if (m) return Number(m[1]) * 3 + Number(m[2]) - 1;
 	return null;
@@ -89,10 +84,8 @@ export interface Course {
 }
 
 export const NON_NUMERIC_GRADES = ['S', 'U', 'INC', 'DRP', 'W', 'P', 'DFG'];
-const EXCLUDED_PREFIXES = ['NSTP', 'HK', 'PE'];
-
-export const isPrefixExcluded = (code: string) =>
-	EXCLUDED_PREFIXES.some((p) => code.toUpperCase().startsWith(p));
+/** NSTP, HK and PE are not in the GWA. PEd and similar codes are. */
+export const isPrefixExcluded = isNonGwaCourseCode;
 
 export const gradeText = (g: unknown) => String(g ?? '').toUpperCase().trim();
 
@@ -143,6 +136,8 @@ export interface Completed {
 export interface GwaResult {
 	gwa: number;
 	totalUnits: number;
+	/** Units with a passing grade (1.00 to 3.00). A 4.00 or 5.00 is in the GWA but not passed. */
+	passedUnits: number;
 	totalCourses: number;
 	completedCourses: Completed[];
 	excludedUnits: number;
@@ -157,6 +152,7 @@ export interface GwaResult {
 export function calculateGWA(courses: Course[], excludedIds: Set<string> = new Set()): GwaResult {
 	let weighted = 0;
 	let totalUnits = 0;
+	let passedUnits = 0;
 	let totalCourses = 0;
 	let excludedUnits = 0;
 	let excludedCount = 0;
@@ -179,15 +175,17 @@ export function calculateGWA(courses: Course[], excludedIds: Set<string> = new S
 		weighted += grade * units;
 		totalUnits += units;
 		totalCourses++;
-		// A 4.00 or 5.00 counts in the GWA but does not complete the course. The
-		// extension popup listed it as completed, which hid failed courses from
-		// the remaining list.
-		if (grade <= 3) completedCourses.push({ code: course.code, title: course.title, units, grade });
+		// A 4.00 or 5.00 counts in the GWA but does not complete the course.
+		if (grade <= 3) {
+			passedUnits += units;
+			completedCourses.push({ code: course.code, title: course.title, units, grade });
+		}
 	});
 
 	return {
 		gwa: totalUnits > 0 ? weighted / totalUnits : 0,
 		totalUnits,
+		passedUnits,
 		totalCourses,
 		completedCourses,
 		excludedUnits,
@@ -195,18 +193,22 @@ export function calculateGWA(courses: Course[], excludedIds: Set<string> = new S
 	};
 }
 
-/** GWA of one term or year, skipping excluded courses. */
-export function groupGWA(courses: Course[], excludedIds: Set<string> = new Set()): number {
+/** GWA of one term or year, skipping excluded courses, and whether it has a 5.00, 4.00 or INC. */
+export function groupGWA(courses: Course[], excludedIds: Set<string> = new Set()) {
 	let weighted = 0;
-	let units = 0;
+	let totalUnits = 0;
+	let hasFailOrInc = false;
 	courses.forEach((c) => {
 		if (excludedIds.has(c.id) || isPrefixExcluded(c.code)) return;
+		if (c.grade === 'INC') hasFailOrInc = true;
 		const g = numericGrade(c.grade);
-		if (g == null || !c.units) return;
+		if (g == null) return;
+		if (g > 3) hasFailOrInc = true;
+		if (!c.units) return;
 		weighted += g * c.units;
-		units += c.units;
+		totalUnits += c.units;
 	});
-	return units > 0 ? weighted / units : 0;
+	return { gwa: totalUnits > 0 ? weighted / totalUnits : 0, totalUnits, hasFailOrInc };
 }
 
 export interface Group {
@@ -229,23 +231,24 @@ export function groupCourses(courses: Course[], by: 'term' | 'year'): Group[] {
 
 /* ---------- Honors ---------- */
 
+// Latin honors only. Honor Roll is not a Latin honor, so it is not a target or a badge.
 export const HONORS = [
 	{ key: 'summa', name: 'Summa Cum Laude', max: 1.2 },
 	{ key: 'magna', name: 'Magna Cum Laude', max: 1.45 },
-	{ key: 'cum', name: 'Cum Laude', max: 1.75 },
-	{ key: 'roll', name: 'Honor Roll', max: 2.0 }
+	{ key: 'cum', name: 'Cum Laude', max: 1.75 }
 ] as const;
 
-export function honorFor(gwa: number) {
-	if (!(gwa > 0)) return null;
+/** The honor track for a GWA. None with zero graded units. */
+export function honorFor(gwa: number, totalUnits: number) {
+	if (!totalUnits || !(gwa > 0)) return null;
 	return HONORS.find((h) => gwa <= h.max) ?? null;
 }
 
-export function scholarFor(gwa: number): string | null {
-	if (!(gwa > 0)) return null;
-	if (gwa <= 1.45) return 'University Scholar';
-	if (gwa <= 1.75) return 'College Scholar';
-	if (gwa <= 2.0) return 'Honor Roll';
+/** University or College Scholar for one term. Needs at least 15 units and no 5.00, 4.00 or INC. */
+export function scholarFor(group: ReturnType<typeof groupGWA>): string | null {
+	if (!(group.gwa > 0) || group.totalUnits < 15 || group.hasFailOrInc) return null;
+	if (group.gwa <= 1.45) return 'University Scholar';
+	if (group.gwa <= 1.75) return 'College Scholar';
 	return null;
 }
 
@@ -267,103 +270,17 @@ export const formatGrade = (grade: string) => {
 	return n == null ? grade || 'No grade' : n.toFixed(2);
 };
 
-/* ---------- Remaining courses ---------- */
-
-export interface Remaining {
-	track: string | null;
-	detectedTrack: string | null;
-	remaining: { code: string; units: number; title?: string }[];
-	requiredUnits: number;
-	completedGECount: number;
-	geRequired: number;
-	remainingGESlots: number;
-	freeElectiveUnitsTotal: number;
-	freeElectiveUnitsTaken: number;
-	freeElectiveUnitsRemaining: number;
-	/** Units still to take: required + free electives + 3 per missing GE. */
-	remainingUnits: number;
-	/** Completed courses that can stand in for a required course. */
-	substituteOptions: Completed[];
-}
+/* ---------- Substitutions ---------- */
 
 const up = (s: string) => s.toUpperCase().trim();
 
-export function remainingFor(
-	program: Program,
-	completed: Completed[],
-	substitutions: Record<string, string>,
-	chosenTrack: string | null
-): Remaining {
-	const detectedTrack = detectTrack(program, completed);
-	const track = program.tracks
-		? detectedTrack || chosenTrack || program.defaultTrack || Object.keys(program.tracks)[0]
-		: null;
-	const freeElectiveUnitsTotal = getFreeElectiveUnits(program, track);
-
-	const completedCodes = new Set(completed.map((c) => up(c.code)));
-	for (const [req, taken] of Object.entries(substitutions)) {
-		if (completedCodes.has(up(taken))) completedCodes.add(up(req));
-	}
-	const remaining = (program.majorCourses || [])
-		.filter((c) => !completedCodes.has(up(c.code)))
-		.map((c) => ({ code: c.code, units: Number(c.units) || 0, title: c.title }));
-	const requiredUnits = remaining.reduce((s, c) => s + c.units, 0);
-
-	const completedGECount = countCompletedGE(completed);
-	const geRequired = program.geCoursesRequired || 9;
-	const remainingGESlots = Math.max(0, geRequired - completedGECount);
-
+/** Passed courses that can stand in for a required course: not required, not a GE, not already used. */
+export function substituteOptions(program: Program, completed: Completed[], substitutions: Record<string, string>): Completed[] {
 	const requiredSet = new Set((program.requiredCodes || []).map(up));
-	const isGE = (c: Completed) => isGECourse(c.code, c.title);
-	const usedAsSub = (code: string) =>
-		Object.entries(substitutions).some(([req, taken]) => up(taken) === code && requiredSet.has(up(req)));
-	const freeElectiveUnitsTaken = completed
-		.filter((c) => !requiredSet.has(up(c.code)) && !usedAsSub(up(c.code)) && !isGE(c))
-		.reduce((s, c) => s + c.units, 0);
-	const freeElectiveUnitsRemaining = Math.max(0, freeElectiveUnitsTotal - freeElectiveUnitsTaken);
-
 	const takenAsSub = new Set(Object.values(substitutions).map(up));
-	const substituteOptions = completed
-		.filter((c) => !requiredSet.has(up(c.code)) && !isGE(c) && !takenAsSub.has(up(c.code)))
+	return completed
+		.filter((c) => !requiredSet.has(up(c.code)) && !isGECourse(c.code, c.title) && !takenAsSub.has(up(c.code)))
 		.sort((a, b) => a.code.localeCompare(b.code));
-
-	return {
-		track,
-		detectedTrack,
-		remaining,
-		requiredUnits,
-		completedGECount,
-		geRequired,
-		remainingGESlots,
-		freeElectiveUnitsTotal,
-		freeElectiveUnitsTaken,
-		freeElectiveUnitsRemaining,
-		remainingUnits: requiredUnits + freeElectiveUnitsRemaining + remainingGESlots * 3,
-		substituteOptions
-	};
-}
-
-/* ---------- What if ---------- */
-
-export type WhatIfStatus = 'achieved' | 'impossible-low' | 'impossible-high' | 'possible';
-
-export interface WhatIf {
-	status: WhatIfStatus;
-	/** Average grade needed over the remaining units. */
-	required: number;
-	/** excellent, good, moderate or difficult, when possible. */
-	effort?: 'excellent' | 'good' | 'moderate' | 'difficult';
-}
-
-/** Average grade needed on the remaining units for the final GWA to reach the target. */
-export function whatIf(target: number, gwa: number, unitsDone: number, unitsLeft: number): WhatIf {
-	if (gwa > 0 && gwa <= target) return { status: 'achieved', required: gwa };
-	const required = unitsLeft > 0 ? (target * (unitsDone + unitsLeft) - gwa * unitsDone) / unitsLeft : 0;
-	if (required < 1) return { status: 'impossible-low', required };
-	if (required > 5) return { status: 'impossible-high', required };
-	const effort =
-		required <= 1.25 ? 'excellent' : required <= 1.75 ? 'good' : required <= 2.5 ? 'moderate' : 'difficult';
-	return { status: 'possible', required, effort };
 }
 
 /* ---------- Catalog lookups for manual entry ---------- */

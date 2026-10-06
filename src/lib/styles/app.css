@@ -283,6 +283,10 @@ textarea {
 	color: var(--ok);
 }
 
+.notice.warn .icon {
+	color: var(--warn);
+}
+
 /* Prose pages (about, legal) */
 .prose {
 	max-width: 70ch;

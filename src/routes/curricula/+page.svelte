@@ -45,11 +45,12 @@
 		CVM: [['Doctor of Veterinary Medicine', 'Doctor-of-Veterinary-Medicine', 1]]
 	};
 
-	// Programs the planner knows that have no checklist image here yet, by college.
+	// Programs the planner has full data for but no checklist image here yet, by
+	// college. Programs that are not available yet are coming soon, not planner only.
 	const withImage = new Set(Object.values(CHECKLIST_PROGRAM));
 	const plannerOnly = (college: string) =>
 		Object.values(UPLB_PROGRAMS)
-			.filter((p) => p.college === college && !withImage.has(p.code))
+			.filter((p) => p.college === college && p.available && !withImage.has(p.code))
 			.sort((a, b) => a.name.localeCompare(b.name));
 
 	let dialog: HTMLDialogElement | undefined = $state();

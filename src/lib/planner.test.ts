@@ -5,13 +5,15 @@ import {
 	absLabel,
 	buildColumns,
 	calendarAbs,
+	cardFacts,
 	compute,
-	defaultCap,
-	gradeResult,
+	DEFAULT_PLANNER_OPTIONS,
 	modelFor,
+	whatIfMessage,
 	summary,
 	type PlannerInput
 } from './planner.ts';
+import { gradeResult } from './requirements.ts';
 
 const now = new Date(2024, 9, 1); // October 2024: 1st sem AY 2024-25 is underway
 const model = modelFor('BSCS')!;
@@ -21,7 +23,7 @@ const input = (over: Partial<PlannerInput> = {}): PlannerInput => ({
 	customCourseStatus: {},
 	plannerPins: {},
 	plannerPetitions: {},
-	plannerOptions: { cap: defaultCap(model.program), midyear: false, midyear9: false },
+	plannerOptions: DEFAULT_PLANNER_OPTIONS,
 	whatif: null,
 	...over
 });
@@ -67,7 +69,29 @@ test('what-if fail on a planned course adds a hypothetical attempt and a retake'
 test('every program builds a plan without throwing', () => {
 	for (const code of ['BSCS', 'BSBIO', 'BSCE', 'DVM', 'BACOMM', 'ASDC']) {
 		const m = modelFor(code)!;
-		const v = compute(m, { ...input(), gradesData: null, plannerOptions: { cap: defaultCap(m.program), midyear: false, midyear9: false } }, now);
+		const v = compute(m, { ...input(), gradesData: null, plannerOptions: DEFAULT_PLANNER_OPTIONS }, now);
 		expect(buildColumns(v).list.length).toBeGreaterThan(0);
 	}
+});
+
+test('a what-if fail on a course already failed reports what that failure costs', () => {
+	const v = compute(model, input({ whatif: { code: 'MATH 27', mode: 'fail' } }), now);
+	expect(whatIfMessage(v)).toMatch(/^MATH 27 is failed on your record/);
+});
+
+test('free elective cards are never critical', () => {
+	const v = compute(model, input(), now);
+	const { primary } = buildColumns(v);
+	const fe = Object.values(primary).filter((c) => /^FE /.test(c.code));
+	expect(fe.length).toBeGreaterThan(0);
+	fe.forEach((card) => expect(cardFacts(card, v).crit).toBe(false));
+});
+
+test('the plan follows the track: SP keeps CMSC 190 and 18 free elective units', () => {
+	const sp = modelFor('BSCS', 'sp')!;
+	const thesis = modelFor('BSCS', 'thesis')!;
+	expect(sp.byCode.has('CMSC 190') && !sp.byCode.has('CMSC 200')).toBe(true);
+	expect(thesis.byCode.has('CMSC 200') && !thesis.byCode.has('CMSC 190')).toBe(true);
+	const fe = (m: typeof sp) => m.courses.filter((c) => /^FE /.test(c.code)).reduce((s, c) => s + c.units, 0);
+	expect([fe(sp), fe(thesis)]).toEqual([18, 15]);
 });
