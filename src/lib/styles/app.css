@@ -20,6 +20,13 @@ body {
 	font-size: 1rem;
 	line-height: 1.55;
 	-webkit-font-smoothing: antialiased;
+	display: flex;
+	flex-direction: column;
+}
+
+/* Short pages keep the footer at the bottom of the window. */
+#main {
+	flex: 1 0 auto;
 }
 
 h1,
@@ -38,6 +45,11 @@ p,
 ul,
 ol {
 	margin: 0;
+}
+
+/* Keep running text readable on wide screens. */
+p {
+	max-width: 70ch;
 }
 
 a {
@@ -179,6 +191,9 @@ textarea {
 }
 
 .textbtn {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
 	min-height: 40px;
 	padding: 6px 8px;
 	border: 0;
@@ -205,14 +220,6 @@ textarea {
 }
 
 .muted {
-	color: var(--muted);
-}
-
-.eyebrow {
-	font-size: 0.78rem;
-	font-weight: 700;
-	letter-spacing: 0.06em;
-	text-transform: uppercase;
 	color: var(--muted);
 }
 
@@ -278,7 +285,7 @@ textarea {
 
 /* Prose pages (about, legal) */
 .prose {
-	max-width: 68ch;
+	max-width: 70ch;
 	color: var(--body);
 }
 

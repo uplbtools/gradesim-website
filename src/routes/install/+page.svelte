@@ -2,6 +2,7 @@
 	import { resolve } from '$app/paths';
 	import Seo from '#lib/components/Seo.svelte';
 	import Icon from '#lib/components/Icon.svelte';
+	import PageHead from '#lib/components/PageHead.svelte';
 
 	const stores = [
 		{
@@ -32,13 +33,10 @@
 />
 
 <div class="wrap">
-	<header class="page-head">
-		<h1>Install the extension</h1>
-		<p>
-			The extension reads your grades when you open AMIS, then shows them in its popup and hands them to this web app when you
-			ask. It is free, open source, and keeps everything on your device.
-		</p>
-	</header>
+	<PageHead title="Install the extension">
+		The extension reads your grades when you open AMIS, then shows them in its popup and hands them to this web app when you
+		ask. It is free, open source, and keeps everything on your device.
+	</PageHead>
 
 	<ul class="stores">
 		{#each stores as s (s.name)}
@@ -63,7 +61,7 @@
 	<section class="prose steps">
 		<h2>After installing</h2>
 		<ol>
-			<li>Log in to <a href="https://amis.uplb.edu.ph" rel="noopener" target="_blank">AMIS</a> as usual. GradeSim never sees your password; you sign in to AMIS itself.</li>
+			<li>Log in to <a href="https://amis.uplb.edu.ph" rel="noopener" target="_blank">AMIS</a> as usual. GradeSim never sees your password, because you sign in to AMIS itself.</li>
 			<li>Open your grades. The extension saves them in your browser.</li>
 			<li>Come back to <a href={resolve('/')}>Elbi GradeSim</a> and choose Import from the GradeSim extension.</li>
 		</ol>

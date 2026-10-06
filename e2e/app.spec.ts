@@ -14,14 +14,25 @@ async function importFixture(page: Page) {
 	await expect(page.getByTestId('gwa')).toHaveText('1.9773');
 }
 
-test('first visit shows the welcome with three ways in', async ({ page }) => {
+test('first visit leads with the extension and offers two other ways in', async ({ page }) => {
 	await page.goto('/');
 	await expect(page.getByRole('heading', { level: 1 })).toContainText('Your GWA');
 	await expect(page.getByText('Your grades stay in this browser.')).toBeVisible();
-	await expect(page.getByRole('heading', { name: 'From the GradeSim extension' })).toBeVisible();
-	await expect(page.getByRole('link', { name: 'Install the extension' }).first()).toHaveAttribute('href', /install\/$/);
+	await expect(page.locator('#main').getByRole('link', { name: 'Install the extension' })).toHaveAttribute('href', /install\/$/);
 	await expect(page.getByRole('button', { name: 'Import a file' })).toBeVisible();
 	await expect(page.getByRole('button', { name: 'Enter grades by hand' })).toBeVisible();
+});
+
+test('unknown URLs get the branded 404', async ({ page }) => {
+	const res = await page.goto('/does-not-exist/');
+	expect(res?.status()).toBe(404);
+	await expect(page.getByRole('heading', { level: 1 })).toHaveText('This page is not here');
+	await expect(page.getByRole('link', { name: 'Open Elbi GradeSim' })).toHaveAttribute('href', '/');
+});
+
+test('curricula lists planner programs that have no checklist image', async ({ page }) => {
+	await page.goto('/curricula/');
+	await expect(page.getByRole('link', { name: /BS Computer Science.*Planner only/ })).toHaveAttribute('href', '/?program=BSCS#planner');
 });
 
 test('manual entry: add courses by hand and the GWA shows', async ({ page }) => {

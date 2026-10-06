@@ -1,8 +1,9 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
-	import { CHECKLIST_PROGRAM, COLLEGES } from '#lib/curriculum.ts';
+	import { CHECKLIST_PROGRAM, COLLEGES, UPLB_PROGRAMS } from '#lib/curriculum.ts';
 	import Seo from '#lib/components/Seo.svelte';
 	import Icon from '#lib/components/Icon.svelte';
+	import PageHead from '#lib/components/PageHead.svelte';
 
 	// Checklist images in static/curricula/<college>/<slug>-<page>.png
 	const CHECKLISTS: Record<string, [name: string, slug: string, pages: number][]> = {
@@ -44,6 +45,13 @@
 		CVM: [['Doctor of Veterinary Medicine', 'Doctor-of-Veterinary-Medicine', 1]]
 	};
 
+	// Programs the planner knows that have no checklist image here yet, by college.
+	const withImage = new Set(Object.values(CHECKLIST_PROGRAM));
+	const plannerOnly = (college: string) =>
+		Object.values(UPLB_PROGRAMS)
+			.filter((p) => p.college === college && !withImage.has(p.code))
+			.sort((a, b) => a.name.localeCompare(b.name));
+
 	let dialog: HTMLDialogElement | undefined = $state();
 	let open = $state<{ college: string; name: string; slug: string; pages: number } | null>(null);
 
@@ -60,10 +68,10 @@
 />
 
 <div class="wrap">
-	<header class="page-head">
-		<h1>UPLB curriculum checklists</h1>
-		<p>Official checklists for undergraduate programs, grouped by college. Open one to read it, or plan it term by term in GradeSim.</p>
-	</header>
+	<PageHead title="UPLB curriculum checklists">
+		Official checklists for undergraduate programs, grouped by college. Open one to read it, or plan it term by term in
+		GradeSim. Programs marked planner only already work in the planner, and their checklist image will be added here later.
+	</PageHead>
 
 	{#each Object.entries(CHECKLISTS) as [college, programs] (college)}
 		<section class="college" aria-labelledby="c-{college}">
@@ -75,6 +83,14 @@
 							<span>{name}</span>
 							<span class="muted">{pages} {pages === 1 ? 'page' : 'pages'}</span>
 						</button>
+					</li>
+				{/each}
+				{#each plannerOnly(college) as p (p.code)}
+					<li>
+						<a class="program card planner-only" href="{resolve('/')}?program={p.code}#planner">
+							<span>{p.name}</span>
+							<span class="muted">Planner only for now</span>
+						</a>
 					</li>
 				{/each}
 			</ul>
@@ -131,11 +147,19 @@
 		text-align: left;
 		font-weight: 600;
 		color: var(--ink);
+		text-decoration: none;
 		cursor: pointer;
 	}
 
 	.program:hover {
 		border-color: var(--brand);
+	}
+
+	.planner-only {
+		flex-direction: column;
+		align-items: flex-start;
+		justify-content: center;
+		gap: 2px;
 	}
 
 	.program .muted {

@@ -29,6 +29,8 @@
 	import { preGroups } from '#lib/scheduler.ts';
 	import { buildPlannerSheets, writeXlsx } from '#lib/xlsx.ts';
 	import Icon, { type IconName } from './Icon.svelte';
+	import Notice from './Notice.svelte';
+	import StatusLabel from './StatusLabel.svelte';
 	import './planner.css';
 
 	const model = $derived(modelFor(app.s.selectedProgram));
@@ -289,7 +291,6 @@
 		{@const c = model.byCode.get(code)!}
 		{@const i = view.info[code]}
 		{@const card = layout?.primary[code]}
-		{@const statusText = card ? STATUS[card.status][1] : i.status === 'failed' ? 'Failed' : 'Planned'}
 		{@const t = view.now.result.assignedTerm[code]}
 		{@const slip = view.slips[code]}
 		{@const blocking = model.graph.blocking[code] || 0}
@@ -300,7 +301,7 @@
 		<aside class="pl-detail" aria-label="Details for {code}">
 			<div class="pl-detail-head">
 				<div>
-					<p class="pl-detail-code">{c.code} <span class="pl-status-pill st-{card ? card.status : 'planned'}">{statusText}</span></p>
+					<p class="pl-detail-code">{c.code} <StatusLabel status={card ? card.status : i.status === 'failed' ? 'failed' : 'planned'} /></p>
 					<p class="pl-detail-title">{c.title}</p>
 				</div>
 				<button type="button" class="pl-close" aria-label="Close details" onclick={() => select(code)}><Icon name="x" /></button>
@@ -373,13 +374,11 @@
 {/snippet}
 
 {#if !view || !layout || !sum || !model}
-	<p class="notice"><Icon name="info" /><span>The planner does not have a checklist for this program yet.</span></p>
+	<Notice>The planner does not have a checklist for this program yet.</Notice>
 {:else}
 	<div class="planner">
 		{#if notice}
-			<p class="notice" class:bad={notice.bad} class:ok={!notice.bad} role="status">
-				<Icon name={notice.bad ? 'alert' : 'check'} /><span>{notice.text}</span>
-			</p>
+			<Notice tone={notice.bad ? 'bad' : 'ok'} live>{notice.text}</Notice>
 		{/if}
 
 		<section class="pl-summary" aria-live="polite">
@@ -511,7 +510,7 @@
 										}}
 										onmouseenter={() => (hover = card.code)}
 									>
-										<span class="pl-card-top"><span class="pl-status"><Icon name={icon(card.status)} size={13} />{facts.statusLabel}</span><span class="pl-units">{c.units}u</span></span>
+										<span class="pl-card-top"><StatusLabel status={card.status} label={facts.statusLabel} /><span class="pl-units">{c.units}u</span></span>
 										<span class="pl-code">{c.code}{#if card.pinned}<span class="pl-pin" title="Moved later by you"> *</span>{/if}</span>
 										<span class="pl-title">{c.title}</span>
 										<span class="pl-card-foot"><span class="pl-offer">{offeringLabel(c)}</span>{#if facts.crit}<span class="pl-crit">Critical</span>{/if}</span>

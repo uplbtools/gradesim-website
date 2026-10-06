@@ -1,5 +1,6 @@
 <script lang="ts">
 	import Seo from '#lib/components/Seo.svelte';
+	import PageHead from '#lib/components/PageHead.svelte';
 </script>
 
 <Seo
@@ -9,11 +10,7 @@
 />
 
 <div class="wrap">
-	<header class="page-head">
-		<p class="eyebrow">Legal</p>
-		<h1>Privacy policy</h1>
-		<p>Last updated October 6, 2026</p>
-	</header>
+	<PageHead title="Privacy policy">Last updated October 6, 2026</PageHead>
 
 	<article class="prose">
 		<h2>What Elbi GradeSim is</h2>
@@ -48,8 +45,8 @@
 
 		<h2>Hosting</h2>
 		<p>
-			The site is served by a hosting provider (currently Vercel), which may log standard request details such as IP address,
-			browser and time of visit for security and delivery. Those logs never contain your grades, because your grades are not
+			The site is hosted on Vercel and reaches you through Cloudflare, which sits in front of it as a proxy and cache. Both
+			may log standard request details such as IP address, browser and time of visit for security and delivery. Those logs never contain your grades, because your grades are not
 			sent with any request. After the first visit the app can run offline from your browser’s cache.
 		</p>
 
@@ -73,8 +70,9 @@
 
 		<h2>Contact</h2>
 		<p>
-			Questions? Email <a href="mailto:semariquit@gmail.com">semariquit@gmail.com</a> or open an issue on
-			<a href="https://github.com/uplbtools/gradesim/issues" rel="noopener" target="_blank">GitHub</a>.
+			For questions about this policy, open an issue on
+			<a href="https://github.com/uplbtools/gradesim/issues" rel="noopener" target="_blank">GitHub</a>. Issues are public, so
+			never paste your grades or AMIS details there.
 		</p>
 	</article>
 </div>

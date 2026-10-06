@@ -2,6 +2,7 @@
 	import { app } from '#lib/app.svelte.ts';
 	import { HONORS, remainingFor, whatIf } from '#lib/grades.ts';
 	import Icon from './Icon.svelte';
+	import Notice from './Notice.svelte';
 
 	let choice = $state<string>('1.75');
 	let custom = $state('');
@@ -83,7 +84,7 @@
 		<section class="card" aria-labelledby="track-title">
 			<h2 id="track-title" class="h">Your track</h2>
 			{#if rem.detectedTrack}
-				<p class="notice ok"><Icon name="check" /><span>Detected from your grades as {app.program.tracks![rem.detectedTrack].name} ({app.program.tracks![rem.detectedTrack].code}).</span></p>
+				<Notice tone="ok">Detected from your grades as {app.program.tracks![rem.detectedTrack].name} ({app.program.tracks![rem.detectedTrack].code}).</Notice>
 			{:else}
 				<div class="tracks" role="radiogroup" aria-label="Track">
 					{#each tracks as [key, t] (key)}
@@ -106,7 +107,7 @@
 				{/each}
 			</ul>
 		{:else}
-			<p class="notice ok"><Icon name="check" /><span>Every required course on the checklist is done.</span></p>
+			<Notice tone="ok">Every required course on the checklist is done.</Notice>
 		{/if}
 		<ul class="notes">
 			<li>
