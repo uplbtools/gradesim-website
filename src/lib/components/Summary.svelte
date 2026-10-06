@@ -4,7 +4,7 @@
 	import Icon from './Icon.svelte';
 
 	const g = $derived(app.gwa);
-	const honor = $derived(honorFor(g.gwa));
+	const honor = $derived(honorFor(g.gwa, g.totalUnits));
 </script>
 
 <section class="summary" aria-label="Summary">
@@ -17,11 +17,11 @@
 	</div>
 	<dl class="stats">
 		<div>
-			<dt>Units in GWA</dt>
-			<dd>{g.totalUnits}{#if g.excludedCount}<small> ({g.excludedUnits} left out)</small>{/if}</dd>
+			<dt>Units passed</dt>
+			<dd>{g.passedUnits}{#if g.excludedCount}<small> ({g.excludedUnits} left out)</small>{/if}</dd>
 		</div>
 		<div>
-			<dt>Courses</dt>
+			<dt>Courses in your GWA</dt>
 			<dd>{g.totalCourses}{#if g.excludedCount}<small> ({g.excludedCount} left out)</small>{/if}</dd>
 		</div>
 		<div>

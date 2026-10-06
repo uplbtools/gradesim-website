@@ -8,8 +8,8 @@
 		live = false,
 		children,
 		action
-	}: { tone?: 'info' | 'ok' | 'bad'; live?: boolean; children: Snippet; action?: Snippet } = $props();
-	const ICON = { info: 'info', ok: 'check', bad: 'alert' } as const;
+	}: { tone?: 'info' | 'ok' | 'warn' | 'bad'; live?: boolean; children: Snippet; action?: Snippet } = $props();
+	const ICON = { info: 'info', ok: 'check', warn: 'alert', bad: 'alert' } as const;
 </script>
 
 <div class="notice {tone}" role={live ? 'status' : undefined}>

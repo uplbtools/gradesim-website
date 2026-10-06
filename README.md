@@ -24,8 +24,8 @@ npm run test:e2e   # Playwright against the built site
 ## Layout
 
 - `src/routes/+page.svelte` is the app (Grades, What if, Planner, Wrapped). `about`, `install`, `curricula`, `privacy` and `terms` are the pages around it.
-- `src/lib/*.ts` holds the logic ported from the extension as pure functions: `scheduler.ts`, `curriculum.ts`, `catalog.ts`, `grades.ts`, `planner.ts`, `xlsx.ts`, `wrapped.ts`, and `importers.ts` for backups, plan files and manual entry.
-- `src/lib/data/*.json` is generated from the extension's `curriculum.js` and `catalog.js`. Fix curriculum data in the extension repo and copy it over.
+- `src/lib/*.ts` holds the logic ported from the extension as pure functions: `scheduler.ts`, `curriculum.ts`, `catalog.ts`, `grades.ts`, `planner.ts`, `requirements.ts`, `xlsx.ts`, `wrapped.ts`, and `importers.ts` for backups, plan files and manual entry.
+- `src/lib/data/*.json` is generated from the extension's `curriculum.js` and `catalog.js` by `node scripts/sync-extension-data.mjs <path to extension/src>`. Fix curriculum data in the extension repo, then run it.
 - `src/lib/bridge.ts` asks an installed extension for its grades (externally_connectable on Chromium browsers, a window message answered by a content script on Firefox).
 - `src/service-worker/` precaches the build so the app works offline.
 

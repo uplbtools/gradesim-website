@@ -2,18 +2,19 @@
 // Everything here is pure: Planner.svelte renders what these return.
 
 import { UPLB_CATALOG } from './catalog.ts';
-import {
-	getCompletedRequirementSlotCodes,
-	getPlannerCourses,
-	isGECourse,
-	UPLB_PROGRAMS,
-	type Program
-} from './curriculum.ts';
+import { detectTrack, resolveTrack, UPLB_PROGRAMS, type Program } from './curriculum.ts';
 import { ayOfAbs, termKeyToAbs, type GradesData } from './grades.ts';
+import {
+	amisCourses,
+	fillRequirementSlots,
+	gradeResult,
+	plannerCourseList,
+	remainingRequirements,
+	type Result as GradeResult
+} from './requirements.ts';
 import {
 	analyzeGraph,
 	computeSlips,
-	enrichCourses,
 	normCode,
 	offeredIn,
 	preGroups,
@@ -73,53 +74,50 @@ export interface PlannerInput {
 export interface Model {
 	code: string;
 	program: Program;
+	/** The track the plan follows, or null for programs without tracks. */
+	track: string | null;
 	courses: PlanCourse[];
 	byCode: Map<string, PlanCourse>;
 	graph: Graph;
 }
 
+/** 18 units a sem unless the student picks 21 in Plan options. */
+export const DEFAULT_PLANNER_OPTIONS: PlannerOptions = { cap: 18, midyear: false, midyear9: false };
+
+/**
+ * The track a plan follows. An SP or thesis course on record (passed, failed
+ * or being taken now) wins, then the track the student picked, then the
+ * program default.
+ */
+export function planTrack(program: Program, gradesData: GradesData | null | undefined, chosen: string | null): string | null {
+	return detectTrack(program, amisCourses(gradesData)) || resolveTrack(program, chosen);
+}
+
 const models = new Map<string, Model>();
 
-/** The program's courses merged with the catalog, plus its prerequisite graph. Cached per program. */
-export function modelFor(code: string): Model | null {
+/** The program's courses for a track merged with the catalog, plus its prerequisite graph. Cached per program and track. */
+export function modelFor(code: string, chosenTrack: string | null = null): Model | null {
 	const program = UPLB_PROGRAMS[code];
 	if (!program || !program.majorCourses) return null;
-	if (!models.has(code)) {
-		const courses = enrichCourses(getPlannerCourses(program), UPLB_CATALOG);
-		models.set(code, {
+	const track = resolveTrack(program, chosenTrack);
+	const key = `${code}:${track}`;
+	if (!models.has(key)) {
+		const courses = plannerCourseList(program, track, UPLB_CATALOG);
+		models.set(key, {
 			code,
 			program,
+			track,
 			courses,
 			byCode: new Map(courses.map((c) => [c.code, c])),
 			graph: analyzeGraph(courses)
 		});
 	}
-	return models.get(code)!;
-}
-
-/** 21 units when the program's own checklist already has a regular term above 18. */
-export function defaultCap(program: Program): number {
-	const load: Record<string, number> = {};
-	(program.majorCourses || []).forEach((c) => {
-		if (c.sem === 'midyear') return;
-		const k = `${c.year}-${c.sem}`;
-		load[k] = (load[k] || 0) + (Number(c.units) || 0);
-	});
-	return Object.values(load).some((u) => u > 18) ? 21 : 18;
+	return models.get(key)!;
 }
 
 /* ---------- Grade history ---------- */
 
-type Result = 'passed' | 'failed' | 'nograde' | 'other' | 'inprogress';
-
-export function gradeResult(raw: unknown): Result {
-	const g = (raw == null ? '' : String(raw)).toUpperCase().trim();
-	const n = parseFloat(g);
-	if (g === 'S' || g === 'P' || (n >= 1 && n <= 3)) return 'passed';
-	if (n === 5 || g === 'F' || g === 'U') return 'failed';
-	if (!g) return 'nograde';
-	return 'other'; // INC, DRP, 4.00: not passed, not a fail
-}
+type Result = GradeResult | 'inprogress';
 
 export interface Attempt {
 	code: string;
@@ -172,7 +170,7 @@ export function readHistory(model: Model, input: PlannerInput, now = new Date())
 	});
 	list.sort((a, b) => a.abs - b.abs);
 
-	// Curriculum code to attempts, including GE/HK/NSTP slots and substitutions.
+	// Curriculum code to attempts, including GE, HK, NSTP and elective slots and substitutions.
 	const byCurr: Record<string, Attempt[]> = {};
 	const push = (code: string, a: Attempt) => {
 		(byCurr[code] = byCurr[code] || []).push(a);
@@ -181,28 +179,10 @@ export function readHistory(model: Model, input: PlannerInput, now = new Date())
 		if (model.byCode.has(a.code)) push(a.code, a);
 	});
 
+	// Slots filled the same way the What if tab counts them.
 	const doneOrNow = list.filter((a) => a.result === 'passed' || a.result === 'inprogress');
-	const slotDone = getCompletedRequirementSlotCodes(
-		doneOrNow.map((a) => ({ code: a.code, title: a.title })),
-		model.program
-	);
-	const kinds: [string, (a: Attempt) => boolean][] = [
-		['ge', (a) => isGECourse(a.code, a.title) && !model.byCode.has(a.code)],
-		['hk', (a) => /^(HK|PE)\b/.test(a.code) && !model.byCode.has(a.code)],
-		['nstp', (a) => /^NSTP\b/.test(a.code) && !model.byCode.has(a.code)]
-	];
-	kinds.forEach(([kind, match]) => {
-		const slots = model.courses.filter((c) => c.genericRequirement === kind && slotDone.has(c.code));
-		const taken = doneOrNow.filter(match);
-		slots.forEach((slot, i) => {
-			const a = taken[i];
-			if (a) push(slot.code, { ...a, via: a.code });
-		});
-	});
-	Object.entries(input.substitutions || {}).forEach(([req, taken]) => {
-		const r = normCode(req);
-		const a = doneOrNow.find((x) => x.code === normCode(taken));
-		if (a && model.byCode.has(r)) push(r, { ...a, via: a.code });
+	fillRequirementSlots(model.courses, doneOrNow, input.substitutions).forEach((a, slot) => {
+		if (a.code !== slot && model.byCode.has(slot)) push(slot, { ...a, via: a.code });
 	});
 
 	return { attempts: list, byCurr, latestAbs, passedOutside: new Set(doneOrNow.map((a) => a.code)) };
@@ -321,8 +301,14 @@ export function compute(model: Model, input: PlannerInput, now = new Date()) {
 	// Baseline with the what-if removed, for the "what changed" message.
 	const noWhatif = wi ? run(failures.filter((f) => f.source !== 'whatif'), false) : null;
 	const slips = computeSlips(nowRun.runOpts, nowRun.result);
+	// Same count as the What if tab: passed courses plus manual marks.
+	const left = remainingRequirements(
+		model.courses,
+		hist.attempts.filter((a) => a.result === 'passed'),
+		{ substitutions: input.substitutions, overrides: input.customCourseStatus }
+	);
 
-	const v = { model, input, hist, info, startAbs, passed: nowRun.passed, failures, costs, now: nowRun, ideal, noWhatif, slips, unitCaps };
+	const v = { model, input, hist, info, startAbs, passed: nowRun.passed, failures, costs, now: nowRun, ideal, noWhatif, slips, unitCaps, left };
 	v.costs.forEach((c) => {
 		c.cost = termsLate(v, c.costT[0], c.costT[1]);
 	});
@@ -340,6 +326,7 @@ export function termsLate(v: Pick<View, 'startAbs' | 'input'>, fromT: number, to
 	return n;
 }
 export const termsText = (n: number) => `${n} term${n === 1 ? '' : 's'}`;
+export const unitsText = (n: number) => `${n} unit${n === 1 ? '' : 's'}`;
 
 /* ---------- Summary ---------- */
 
@@ -369,14 +356,15 @@ export function summary(v: View) {
 	}
 
 	const termsLeft = r.plan.filter((p) => p.courses.length).length;
-	const bits: string[] = [];
-	if (gradAbs != null) {
-		bits.push(`That is ${ayLabel(gradAbs)}`);
-		bits.push(`${termsText(termsLeft)} with classes left, starting ${absLabel(v.startAbs)}`);
-	}
-	bits.push(`up to ${v.unitCaps['1']} units a sem`);
-	bits.push(v.input.plannerOptions.midyear ? `midyear up to ${v.unitCaps.midyear}` : 'midyear only where the checklist puts it');
-	const sub = `${bits.join(', ')}. Free electives are not counted.`;
+	const nowTaking = Object.values(v.info).some((i) => i.status === 'inprogress');
+	const sentences: string[] = [];
+	if (gradAbs != null)
+		sentences.push(`That is ${ayLabel(gradAbs)}, with ${termsText(termsLeft)} of classes from ${absLabel(v.startAbs)}.`);
+	sentences.push(`You have ${unitsText(v.left.units)} left to pass${nowTaking ? ', counting this term' : ''}.`);
+	sentences.push(
+		`The plan takes up to ${v.unitCaps['1']} units a sem and ${v.input.plannerOptions.midyear ? `up to ${v.unitCaps.midyear} in midyear` : 'midyear only where the checklist puts it'}.`
+	);
+	const sub = sentences.join(' ');
 
 	const showCosts = v.costs.length > 1 || (v.costs.length === 1 && v.costs[0].source !== 'whatif');
 	return { headline, deltaText, deltaOk, sub, costs: showCosts ? v.costs : [] };
@@ -534,10 +522,13 @@ function orderColumns(model: Model, list: Column[], primary: Record<string, Card
 	}
 }
 
+/** On the critical path. Free elective cards stand for any course, so they never are. */
+export const isCritical = (code: string, v: View) =>
+	v.slips[code] > 0 && v.model.byCode.get(code)?.genericRequirement !== 'elective';
+
 /** What a card says besides code and title: shared by the map and the Excel export. */
 export function cardFacts(card: Card, v: View) {
-	const slip = v.slips[card.code];
-	const crit = !card.history && slip > 0 && !['passed', 'inprogress', 'failed'].includes(card.status);
+	const crit = isCritical(card.code, v) && !card.history && !['passed', 'inprogress', 'failed'].includes(card.status);
 	let note: { icon: string | null; text: string; warn?: boolean } | null = null;
 	if (card.waitingOn) note = { icon: 'lock', text: `Waiting on ${card.waitingOn}` };
 	else if (card.conditional) note = { icon: 'flag', text: 'Petition needed', warn: true };
@@ -577,10 +568,29 @@ export function columnFacts(column: Column, v: View) {
 	return { isPast, name, sub, units, isMid, future, tag, warn, loud, cap: future ? (isMid ? v.unitCaps.midyear : v.unitCaps['1']) : null };
 }
 
+/**
+ * A course already failed on record: its retake is in the plan, so say what
+ * that failure costs instead of failing it a second time. Empty when the
+ * course has no past failure.
+ */
+export function pastFailMessage(v: View, code: string): string {
+	const past = v.costs.find((c) => c.code === code && c.past);
+	if (!past) return '';
+	const t = v.now.result.assignedTerm[code];
+	const retake = t === undefined ? '' : ` The retake is planned for ${absLabel(v.startAbs + t)}.`;
+	return past.cost > 0
+		? `${code} is failed on your record, which moves graduation ${termsText(past.cost)} later, to ${absLabel(v.startAbs + v.now.result.gradTermIndex)}.${retake}`
+		: `${code} is failed on your record, but it does not move graduation.${retake}`;
+}
+
 /** Courses whose planned term moved later between two runs. */
 export function whatIfMessage(v: View): string {
 	const wi = v.input.whatif;
 	if (!wi || !v.noWhatif) return '';
+	if (wi.mode === 'fail') {
+		const past = pastFailMessage(v, wi.code);
+		if (past) return past;
+	}
 	const after = v.now.result;
 	const base = v.noWhatif.result;
 	const slip = termsLate(v, base.gradTermIndex, after.gradTermIndex);

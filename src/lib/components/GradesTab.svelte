@@ -7,8 +7,8 @@
 		groupCourses,
 		groupGWA,
 		NON_NUMERIC_GRADES,
-		remainingFor,
-		scholarFor
+		scholarFor,
+		substituteOptions
 	} from '#lib/grades.ts';
 	import { makeBackup, removeCourse, setGrade, VALID_GRADES } from '#lib/importers.ts';
 	import { today } from '#lib/planner.ts';
@@ -32,7 +32,7 @@
 	let subTaken = $state('');
 
 	const groups = $derived(groupCourses(app.courses, view));
-	const rem = $derived(remainingFor(app.program, app.gwa.completedCourses, app.s.substitutions, app.s.track));
+	const subOptions = $derived(substituteOptions(app.program, app.gwa.completedCourses, app.s.substitutions));
 	const required = $derived([...app.program.majorCourses].sort((a, b) => a.code.localeCompare(b.code)));
 	const SOURCE = { extension: 'the GradeSim extension', file: 'a file you imported', manual: 'grades you entered' };
 
@@ -80,8 +80,9 @@
 	{/if}
 
 	{#each groups as g (g.key)}
-		{@const gwa = groupGWA(g.courses, app.excluded)}
-		{@const scholar = scholarFor(gwa)}
+		{@const group = groupGWA(g.courses, app.excluded)}
+		{@const gwa = group.gwa}
+		{@const scholar = scholarFor(group)}
 		<section class="group" aria-label={g.label}>
 			<header>
 				<h2>{g.label}</h2>
@@ -151,7 +152,7 @@
 				Covered by
 				<select class="select" bind:value={subTaken}>
 					<option value="">Choose a course you passed</option>
-					{#each rem.substituteOptions as c (c.code)}<option value={c.code.toUpperCase().trim()}>{c.code} ({c.units}u, {c.grade})</option>{/each}
+					{#each subOptions as c (c.code)}<option value={c.code.toUpperCase().trim()}>{c.code} ({c.units}u, {c.grade})</option>{/each}
 				</select>
 			</label>
 			<button class="btn btn-secondary" type="button" disabled={!subReq || !subTaken} onclick={addSub}>Apply substitution</button>

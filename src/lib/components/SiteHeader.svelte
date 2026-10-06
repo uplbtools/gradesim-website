@@ -38,7 +38,7 @@
 					{#each groups as g (g.college)}
 						<optgroup label={g.name}>
 							{#each g.programs as p (p.code)}
-								<option value={p.code}>{p.name}</option>
+								<option value={p.code} disabled={!p.available}>{p.available ? p.name : `${p.name}, coming soon`}</option>
 							{/each}
 						</optgroup>
 					{/each}

@@ -2,18 +2,20 @@
 	import { onMount, tick } from 'svelte';
 	import { app, download } from '#lib/app.svelte.ts';
 	import { parseImport } from '#lib/importers.ts';
-	import { UPLB_PROGRAMS } from '#lib/curriculum.ts';
+	import { getProgramDataQuality, UPLB_PROGRAMS } from '#lib/curriculum.ts';
 	import {
 		absLabel,
 		buildColumns,
 		cardFacts,
 		columnFacts,
 		compute,
-		defaultCap,
+		DEFAULT_PLANNER_OPTIONS,
 		exportModel,
+		isCritical,
 		makePlanFile,
 		modelFor,
 		offeringLabel,
+		planTrack,
 		restricted,
 		STATUS,
 		summary,
@@ -33,8 +35,9 @@
 	import StatusLabel from './StatusLabel.svelte';
 	import './planner.css';
 
-	const model = $derived(modelFor(app.s.selectedProgram));
-	const options = $derived(app.s.plannerOptions ?? { cap: model ? defaultCap(model.program) : 18, midyear: false, midyear9: false });
+	const model = $derived(modelFor(app.s.selectedProgram, planTrack(app.program, app.s.gradesData, app.s.track)));
+	const quality = $derived(getProgramDataQuality(app.s.selectedProgram));
+	const options = $derived(app.s.plannerOptions ?? DEFAULT_PLANNER_OPTIONS);
 	const input = $derived<PlannerInput>({
 		gradesData: app.s.gradesData,
 		substitutions: app.s.substitutions,
@@ -106,7 +109,7 @@
 			const gridRect = grid.getBoundingClientRect();
 			svgSize = { w: grid.scrollWidth, h: grid.scrollHeight };
 			const nodeOf = (code: string) => grid.querySelector<HTMLElement>(`.pl-card[data-primary][data-code="${CSS.escape(code)}"]`);
-			const crit = (code: string) => v.slips[code] > 0;
+			const crit = (code: string) => isCritical(code, v);
 			const out: { d: string; kind: string }[] = [];
 			v.model.graph.edges.forEach(({ from, to }) => {
 				let kind: string | null = null;
@@ -379,6 +382,9 @@
 	<div class="planner">
 		{#if notice}
 			<Notice tone={notice.bad ? 'bad' : 'ok'} live>{notice.text}</Notice>
+		{/if}
+		{#if !quality.confident}
+			<Notice tone="warn"><strong>Treat this plan as a rough guide.</strong> {quality.reasons.join(' ')}</Notice>
 		{/if}
 
 		<section class="pl-summary" aria-live="polite">
