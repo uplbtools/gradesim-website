@@ -1,3 +1,10 @@
+# [0.5.0](https://github.com/uplbtools/gradesim-website/compare/v0.4.1...v0.5.0) (2026-10-06)
+
+
+### Features
+
+* **planner:** specialization picker for BS AAE, BS ABME and BS Economics ([#33](https://github.com/uplbtools/gradesim-website/issues/33)) ([f8f2f78](https://github.com/uplbtools/gradesim-website/commit/f8f2f7877103c695ac7d43f4a3bdbdadbd08fedb))
+
 ## [0.4.1](https://github.com/uplbtools/gradesim-website/compare/v0.4.0...v0.4.1) (2026-10-06)
 
 
