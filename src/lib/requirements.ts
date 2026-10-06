@@ -56,6 +56,9 @@ export function amisCourses(gradesData: GradesData | null | undefined): Row[] {
  * slot, one course per slot. Returns a map of slot code to row.
  * ponytail: one course per 3-unit elective slot, so a 6-unit elective fills one.
  */
+// UPLB accepts these in place of the checklist course without a petition.
+const BUILT_IN_EQUIVALENTS: [string, string][] = [['KAS 1', 'HIST 1']];
+
 export function fillRequirementSlots<R extends Row>(
 	courses: PlanCourse[],
 	rows: R[],
@@ -68,12 +71,15 @@ export function fillRequirementSlots<R extends Row>(
 		if (named.has(norm(r)) && !fill.has(norm(r))) fill.set(norm(r), r);
 	});
 	const used = new Set<string>();
-	Object.entries(substitutions || {}).forEach(([req, taken]) => {
+	// The student's own substitutions come first and win.
+	[...Object.entries(substitutions || {}), ...BUILT_IN_EQUIVALENTS].forEach(([req, taken]) => {
 		const code = normalizeCourseCode(req);
 		const row = rows.find((r) => norm(r) === normalizeCourseCode(taken));
-		if (!row) return;
+		if (!row || used.has(norm(row)) || !named.has(code) || fill.has(code)) return;
+		// Only a course that fills the requirement is used up; otherwise it still
+		// counts toward GE or electives.
 		used.add(norm(row));
-		if (named.has(code) && !fill.has(code)) fill.set(code, row);
+		fill.set(code, row);
 	});
 	const seen = new Set<string>();
 	const outside = rows.filter((r) => {

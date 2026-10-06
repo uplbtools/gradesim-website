@@ -129,3 +129,13 @@ test('every available program plans from scratch at 18 units with midyear off', 
 		});
 	expect(failures).toEqual([]);
 });
+
+test('HIST 1 fills KAS 1 and is not counted again as an elective', () => {
+	const econ = plannerCourseList(UPLB_PROGRAMS.BSECON, null, UPLB_CATALOG);
+	const hist = { code: 'HIST 1', title: 'Philippine History', units: 3 };
+	const r = remainingRequirements(econ, [hist]);
+	expect(r.fill.has('KAS 1')).toBe(true);
+	expect(r.electives.doneUnits).toBe(0);
+	const both = remainingRequirements(econ, [hist, { code: 'KAS 1', title: 'Kasaysayan ng Pilipinas', units: 3 }]);
+	expect(both.fill.get('KAS 1')?.code).toBe('KAS 1');
+});
