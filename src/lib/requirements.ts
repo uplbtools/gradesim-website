@@ -52,8 +52,9 @@ export function amisCourses(gradesData: GradesData | null | undefined): Row[] {
 /**
  * Put rows into planner slots. A named checklist course fills itself and a
  * substitution fills its required course. Then GE, HK and NSTP courses fill
- * their placeholder slots and any other course with units fills an elective
- * slot, one course per slot. Returns a map of slot code to row.
+ * their placeholder slots, a course a specialization pool lists fills that
+ * pool's slot, and any other course with units fills an elective slot, one
+ * course per slot. Returns a map of slot code to row.
  * ponytail: one course per 3-unit elective slot, so a 6-unit elective fills one.
  */
 // UPLB accepts these in place of the checklist course without a petition.
@@ -88,6 +89,16 @@ export function fillRequirementSlots<R extends Row>(
 		seen.add(code);
 		return true;
 	});
+	// Specialization slots take only the courses their pool lists.
+	const pooled = new Set<R>();
+	courses
+		.filter((c) => c.options)
+		.forEach((slot) => {
+			const row = outside.find((r) => !pooled.has(r) && slot.options!.includes(norm(r)));
+			if (!row) return;
+			pooled.add(row);
+			fill.set(normalizeCourseCode(slot.code), row);
+		});
 	const kindOf = (r: Row) => {
 		const code = norm(r);
 		if (isGECourse(code, r.title)) return 'ge';
@@ -96,9 +107,9 @@ export function fillRequirementSlots<R extends Row>(
 		return r.units > 0 ? 'elective' : null;
 	};
 	(['ge', 'hk', 'nstp', 'elective'] as const).forEach((kind) => {
-		const taken = outside.filter((r) => kindOf(r) === kind);
+		const taken = outside.filter((r) => !pooled.has(r) && kindOf(r) === kind);
 		courses
-			.filter((c) => c.genericRequirement === kind)
+			.filter((c) => c.genericRequirement === kind && !c.options)
 			.forEach((slot, i) => {
 				if (taken[i]) fill.set(normalizeCourseCode(slot.code), taken[i]);
 			});
@@ -106,13 +117,14 @@ export function fillRequirementSlots<R extends Row>(
 	return fill;
 }
 
-/** The planner's course list: checklist rows for the track plus GE, HK, NSTP and free elective slots, with catalog data. */
+/** The planner's course list: checklist rows for the track and specialization plus GE, HK, NSTP and free elective slots, with catalog data. */
 export function plannerCourseList(
 	program: Program,
 	track: string | null,
-	catalog: Record<string, CatalogEntry> = {}
+	catalog: Record<string, CatalogEntry> = {},
+	specialization: string | null = null
 ): PlanCourse[] {
-	return enrichCourses(getPlannerCourses(program, track), catalog);
+	return enrichCourses(getPlannerCourses(program, track, specialization), catalog);
 }
 
 /**

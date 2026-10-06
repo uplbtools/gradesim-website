@@ -1,7 +1,7 @@
 // App state. Everything lives in this browser's localStorage under one
 // versioned key; nothing is sent anywhere.
 
-import { DEFAULT_PROGRAM, UPLB_PROGRAMS } from './curriculum.ts';
+import { DEFAULT_PROGRAM, resolveSpecialization, UPLB_PROGRAMS } from './curriculum.ts';
 import { calculateGWA, parseAMISData, type GradesData } from './grades.ts';
 import type { GradesPatch } from './importers.ts';
 import type { CourseStatus, PlannerOptions, PlannerInput, PlanFile } from './planner.ts';
@@ -18,6 +18,8 @@ export interface Saved {
 	excludedCourses: string[];
 	substitutions: Record<string, string>;
 	track: string | null;
+	/** Program code to the specialization key the student picked. */
+	selectedSpecializations: Record<string, string>;
 	customCourseStatus: Record<string, CourseStatus>;
 	plannerPins: Record<string, number>;
 	plannerPetitions: Record<string, true>;
@@ -33,6 +35,7 @@ export const blank = (): Saved => ({
 	excludedCourses: [],
 	substitutions: {},
 	track: null,
+	selectedSpecializations: {},
 	customCourseStatus: {},
 	plannerPins: {},
 	plannerPetitions: {},
@@ -66,6 +69,7 @@ class AppState {
 	gwa = $derived(calculateGWA(this.courses, this.excluded));
 	program = $derived(UPLB_PROGRAMS[this.s.selectedProgram] ?? UPLB_PROGRAMS[DEFAULT_PROGRAM]);
 	hasData = $derived(this.courses.length > 0);
+	specialization = $derived(resolveSpecialization(this.program, this.s.selectedSpecializations[this.program.code]));
 
 	load() {
 		this.s = read();
@@ -86,6 +90,15 @@ class AppState {
 		if (patch.selectedProgram) this.s.selectedProgram = patch.selectedProgram;
 		if (patch.excludedCourses) this.s.excludedCourses = patch.excludedCourses;
 		if (patch.substitutions) this.s.substitutions = patch.substitutions;
+		if (patch.selectedSpecializations) this.s.selectedSpecializations = patch.selectedSpecializations;
+	}
+
+	/** Pick a specialization for the current program, or none with an empty key. */
+	setSpecialization(key: string) {
+		const all = { ...this.s.selectedSpecializations };
+		if (key) all[this.program.code] = key;
+		else delete all[this.program.code];
+		this.s.selectedSpecializations = all;
 	}
 
 	applyPlan(plan: PlanFile) {
