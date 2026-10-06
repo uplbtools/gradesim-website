@@ -1,3 +1,10 @@
+## [0.3.2](https://github.com/uplbtools/gradesim-website/compare/v0.3.1...v0.3.2) (2026-10-06)
+
+
+### Bug Fixes
+
+* match the extension's GWA, What if and planner answers ([#27](https://github.com/uplbtools/gradesim-website/issues/27)) ([f46145d](https://github.com/uplbtools/gradesim-website/commit/f46145d34fe88bae42bfadb76351bc7ad2a62363)), closes [#92](https://github.com/uplbtools/gradesim-website/issues/92) [#104](https://github.com/uplbtools/gradesim-website/issues/104) [#106](https://github.com/uplbtools/gradesim-website/issues/106)
+
 ## [0.3.1](https://github.com/uplbtools/gradesim-website/compare/v0.3.0...v0.3.1) (2026-10-06)
 
 
