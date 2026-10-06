@@ -1,3 +1,10 @@
+# [0.4.0](https://github.com/uplbtools/gradesim-website/compare/v0.3.2...v0.4.0) (2026-10-06)
+
+
+### Features
+
+* **planner:** route prerequisite arrows through the gaps like cables ([#31](https://github.com/uplbtools/gradesim-website/issues/31)) ([1d13476](https://github.com/uplbtools/gradesim-website/commit/1d13476554a29b03965e851f5674f3c12ac6ffad)), closes [#30](https://github.com/uplbtools/gradesim-website/issues/30)
+
 ## [0.3.2](https://github.com/uplbtools/gradesim-website/compare/v0.3.1...v0.3.2) (2026-10-06)
 
 
