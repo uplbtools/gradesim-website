@@ -360,8 +360,6 @@
   font-family: var(--font-sans);
   font-size: 0.66rem;
   font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
 }
 
 .pl-tag.now {
@@ -422,10 +420,9 @@
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  font-size: 0.7rem;
+  font-family: var(--font-sans);
+  font-size: 0.75rem;
   font-weight: 650;
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
   color: var(--muted);
 }
 
@@ -467,8 +464,6 @@
   font-size: 0.66rem;
   font-weight: 700;
   color: var(--brand);
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
 }
 
 .pl-note {
@@ -485,27 +480,27 @@
   color: var(--warn);
 }
 
-.st-passed .pl-status,
+.pl-status.st-passed,
 .pl-chip.st-passed .icon { color: var(--ok); }
 
-.st-inprogress .pl-status,
+.pl-status.st-inprogress,
 .pl-chip.st-inprogress .icon { color: var(--info); }
 
 .pl-card.st-failed {
   border-color: var(--bad);
 }
-.st-failed .pl-status,
+.pl-status.st-failed,
 .pl-chip.st-failed .icon { color: var(--bad); }
 
 .pl-card.st-retake {
   border: 1.5px dashed var(--bad);
   background: var(--bg-card);
 }
-.st-retake .pl-status,
+.pl-status.st-retake,
 .pl-chip.st-retake .icon { color: var(--bad); }
 
 .pl-card.st-ready { border-color: var(--brand-line); }
-.st-ready .pl-status,
+.pl-status.st-ready,
 .pl-chip.st-ready .icon { color: var(--brand); }
 
 .pl-card.st-locked {
@@ -581,8 +576,6 @@
 .pl-detail h4 {
   margin: 12px 0 4px;
   font-size: 0.78rem;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
   color: var(--muted);
 }
 
@@ -606,23 +599,6 @@
 .pl-detail-title {
   color: var(--ink);
 }
-
-.pl-status-pill {
-  font-family: var(--font-sans);
-  font-size: 0.7rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  padding: 1px 7px;
-  border: 1px solid currentColor;
-  border-radius: var(--radius-pill);
-  color: var(--muted);
-}
-
-.pl-status-pill.st-passed { color: var(--ok); }
-.pl-status-pill.st-failed,
-.pl-status-pill.st-retake { color: var(--bad); }
-.pl-status-pill.st-ready { color: var(--brand); }
-.pl-status-pill.st-inprogress { color: var(--info); }
 
 .pl-close {
   flex: 0 0 auto;

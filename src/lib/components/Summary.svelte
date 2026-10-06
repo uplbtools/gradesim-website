@@ -9,7 +9,7 @@
 
 <section class="summary" aria-label="Summary">
 	<div class="gwa">
-		<span class="eyebrow">Your GWA</span>
+		<span class="label">Your GWA</span>
 		<span class="value" data-testid="gwa">{g.gwa > 0 ? g.gwa.toFixed(4) : 'No grades yet'}</span>
 		{#if honor}
 			<span class="honor {honor.key}"><Icon name="award" />{honor.name} track</span>
@@ -46,6 +46,12 @@
 		flex-direction: column;
 		align-items: flex-start;
 		gap: 4px;
+	}
+
+	.label {
+		font-size: 0.9rem;
+		font-weight: 600;
+		color: var(--muted);
 	}
 
 	.value {

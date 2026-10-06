@@ -5,7 +5,7 @@
 	import { UPLB_PROGRAMS } from '#lib/curriculum.ts';
 	import { parseBackup, parseImport } from '#lib/importers.ts';
 	import Seo from '#lib/components/Seo.svelte';
-	import Icon from '#lib/components/Icon.svelte';
+	import Notice from '#lib/components/Notice.svelte';
 	import Welcome from '#lib/components/Welcome.svelte';
 	import Summary from '#lib/components/Summary.svelte';
 	import GradesTab from '#lib/components/GradesTab.svelte';
@@ -114,18 +114,19 @@
 <svelte:window onhashchange={readHash} />
 
 <Seo
-	title="Elbi GradeSim: UPLB GWA calculator, Latin honors and course planner"
+	title="Elbi GradeSim, the UPLB GWA calculator and course planner"
 	description="Compute your UPLB GWA, see what you need for Latin honors, and plan your remaining terms around prerequisites. Free, open source, and your grades stay in your browser."
 	path="/"
 />
 
 {#if message}
 	<div class="wrap flash">
-		<div class="notice {message.tone}" role="status">
-			<Icon name={message.tone === 'ok' ? 'check' : 'alert'} />
-			<span>{message.text}</span>
-			<button class="textbtn dismiss" type="button" onclick={() => (message = null)}>Dismiss</button>
-		</div>
+		<Notice tone={message.tone} live>
+			{message.text}
+			{#snippet action()}
+				<button class="textbtn dismiss" type="button" onclick={() => (message = null)}>Dismiss</button>
+			{/snippet}
+		</Notice>
 	</div>
 {/if}
 
@@ -178,7 +179,7 @@
 		margin-top: 12px;
 	}
 
-	.flash .notice {
+	.flash :global(.notice) {
 		align-items: center;
 	}
 

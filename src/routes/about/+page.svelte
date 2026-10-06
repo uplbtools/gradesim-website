@@ -1,6 +1,8 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
 	import Seo from '#lib/components/Seo.svelte';
+	import PageHead from '#lib/components/PageHead.svelte';
+	import ThemedShot from '#lib/components/ThemedShot.svelte';
 
 	const faq = [
 		{
@@ -41,20 +43,18 @@
 />
 
 <div class="wrap">
-	<header class="page-head">
-		<p class="eyebrow">About</p>
-		<h1>A GWA calculator and course planner for UPLB students</h1>
-		<p>
-			Elbi GradeSim started as a browser extension that reads your grades from AMIS. The web app brings the same math to any
-			browser: your GWA, what you need for Latin honors, and a term-by-term map to graduation.
-		</p>
-	</header>
+	<PageHead title="A GWA calculator and course planner for UPLB students">
+		Elbi GradeSim started as a browser extension that reads your grades from AMIS. The web app brings the same math to any
+		browser. It shows your GWA, what you need for Latin honors, and a term by term map to graduation.
+	</PageHead>
 
 	<figure class="shot">
-		<picture>
-			<source srcset="/screenshots/planner-dark.jpg" media="(prefers-color-scheme: dark)" />
-			<img src="/screenshots/planner-light.jpg" alt="The planner showing past terms with passed courses, a failed course with its retake, and the remaining terms up to graduation" width="1440" height="900" loading="lazy" decoding="async" />
-		</picture>
+		<ThemedShot
+			name="planner"
+			alt="The planner showing past terms with passed courses, a failed course with its retake, and the remaining terms up to graduation"
+			width={1440}
+			height={900}
+		/>
 		<figcaption>The planner maps every remaining course to the earliest term it can go, and shows what a failed course costs.</figcaption>
 	</figure>
 
@@ -82,7 +82,7 @@
 		<h2>Credits</h2>
 		<p>
 			Elbi GradeSim is part of <a href="https://uplb.tools" rel="noopener" target="_blank">UPLB Tools</a>, the student-run group
-			behind Room TBA and other campus tools. The code is open source on
+			behind <a href="https://room-tba.uplb.tools" rel="noopener" target="_blank">Room TBA</a> and other campus tools. The code is open source on
 			<a href="https://github.com/uplbtools/gradesim" rel="noopener" target="_blank">GitHub</a>, and curriculum fixes from
 			students are always welcome.
 		</p>
@@ -93,15 +93,6 @@
 <style>
 	.shot {
 		margin: 24px 0 8px;
-	}
-
-	.shot img {
-		display: block;
-		width: 100%;
-		height: auto;
-		border-radius: var(--radius-lg);
-		border: 1px solid var(--border);
-		box-shadow: var(--shadow-md);
 	}
 
 	figcaption {

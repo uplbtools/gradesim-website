@@ -1,5 +1,6 @@
 <script lang="ts">
 	import Seo from '#lib/components/Seo.svelte';
+	import PageHead from '#lib/components/PageHead.svelte';
 </script>
 
 <Seo
@@ -9,11 +10,7 @@
 />
 
 <div class="wrap">
-	<header class="page-head">
-		<p class="eyebrow">Legal</p>
-		<h1>Terms of use</h1>
-		<p>Last updated October 6, 2026</p>
-	</header>
+	<PageHead title="Terms of use">Last updated October 6, 2026</PageHead>
 
 	<article class="prose">
 		<h2>Agreement</h2>
@@ -61,12 +58,15 @@
 		</p>
 
 		<h2>Open source license</h2>
-		<p>The project is distributed under the license in its repository. Forks and contributions are welcome under that license and the project guidelines.</p>
+		<p>The project is distributed under the MIT License in its repository. Forks and contributions are welcome under that license and the project guidelines.</p>
 
 		<h2>Changes</h2>
 		<p>These terms may change. Continuing to use Elbi GradeSim after a change means you accept the revised terms.</p>
 
 		<h2>Contact</h2>
-		<p>Questions? Email <a href="mailto:semariquit@gmail.com">semariquit@gmail.com</a>.</p>
+		<p>
+			For questions about these terms, open an issue on
+			<a href="https://github.com/uplbtools/gradesim/issues" rel="noopener" target="_blank">GitHub</a>.
+		</p>
 	</article>
 </div>

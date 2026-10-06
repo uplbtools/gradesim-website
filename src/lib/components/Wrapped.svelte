@@ -88,7 +88,6 @@
 	.title {
 		color: hsl(9, 70%, 86%);
 		font-size: 1.3rem;
-		letter-spacing: 0.02em;
 	}
 
 	.value {

@@ -1,11 +1,11 @@
 <script lang="ts">
 	import Icon from './Icon.svelte';
 
-	let { label, onFile }: { label: string; onFile: (f: File) => void } = $props();
+	let { label, onFile, quiet = false }: { label: string; onFile: (f: File) => void; quiet?: boolean } = $props();
 	let input: HTMLInputElement | undefined = $state();
 </script>
 
-<button class="btn btn-secondary" type="button" onclick={() => input?.click()}>
+<button class={quiet ? 'textbtn' : 'btn btn-secondary'} type="button" onclick={() => input?.click()}>
 	<Icon name="upload" />{label}
 </button>
 <input

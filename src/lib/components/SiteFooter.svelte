@@ -11,6 +11,7 @@
 			<a href={resolve('privacy/')}>Privacy</a>
 			<a href={resolve('terms/')}>Terms</a>
 			<a href="https://github.com/uplbtools/gradesim" rel="noopener" target="_blank">GitHub</a>
+			<a href="https://room-tba.uplb.tools" rel="noopener" target="_blank">Room TBA</a>
 			<a href="https://uplb.tools" rel="noopener" target="_blank">UPLB Tools</a>
 		</nav>
 		<p>
