@@ -1,3 +1,10 @@
+## [0.3.1](https://github.com/uplbtools/gradesim-website/compare/v0.3.0...v0.3.1) (2026-10-06)
+
+
+### Bug Fixes
+
+* launch fixes, home without the card grid, shared components ([#26](https://github.com/uplbtools/gradesim-website/issues/26)) ([567050b](https://github.com/uplbtools/gradesim-website/commit/567050b42168f3352168030a656efeb75ce8977c))
+
 # [0.3.0](https://github.com/uplbtools/gradesim-website/compare/v0.2.0...v0.3.0) (2026-10-05)
 
 
