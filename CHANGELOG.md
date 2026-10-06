@@ -1,3 +1,10 @@
+## [0.4.1](https://github.com/uplbtools/gradesim-website/compare/v0.4.0...v0.4.1) (2026-10-06)
+
+
+### Bug Fixes
+
+* **requirements:** HIST 1 fills KAS 1 without a manual substitution ([#29](https://github.com/uplbtools/gradesim-website/issues/29)) ([2b5adf6](https://github.com/uplbtools/gradesim-website/commit/2b5adf6ecabe86aa5e113cb2b0883a4ab9ee8681)), closes [uplbtools/gradesim#112](https://github.com/uplbtools/gradesim/issues/112)
+
 # [0.4.0](https://github.com/uplbtools/gradesim-website/compare/v0.3.2...v0.4.0) (2026-10-06)
 
 
