@@ -397,7 +397,7 @@ export function summary(v: View) {
 	sentences.push(`You have ${unitsText(v.left.units)} left to pass${nowTaking ? ', counting this term' : ''}.`);
 	const sub = sentences.join(' ');
 
-	const showCosts = v.costs.length > 1 || (v.costs.length === 1 && v.costs[0].source !== 'whatif');
+	const showCosts = v.costs.length > 1;
 	return { headline, deltaText, deltaOk, sub, costs: showCosts ? v.costs : [] };
 }
 
