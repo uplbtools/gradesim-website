@@ -512,7 +512,7 @@
 
 /* Selection: the selected row, then its prerequisites and what it unlocks. */
 .pl-row.dim {
-  opacity: 0.5;
+  opacity: 0.7;
 }
 
 .pl-row.chain {
