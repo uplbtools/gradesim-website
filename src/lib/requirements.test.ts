@@ -3,7 +3,7 @@
 // outlook math matches the extension.
 import { expect, test } from 'vitest';
 import { UPLB_CATALOG } from './catalog.ts';
-import { getPlannerCourses, UPLB_PROGRAMS } from './curriculum.ts';
+import { getPlannerCourses, isNonGwaCourseCode, UPLB_PROGRAMS } from './curriculum.ts';
 import type { GradesData } from './grades.ts';
 import { compute, DEFAULT_PLANNER_OPTIONS, modelFor } from './planner.ts';
 import { amisCourses, gradeResult, gwaOutlook, plannerCourseList, remainingRequirements } from './requirements.ts';
@@ -138,4 +138,36 @@ test('HIST 1 fills KAS 1 and is not counted again as an elective', () => {
 	expect(r.electives.doneUnits).toBe(0);
 	const both = remainingRequirements(econ, [hist, { code: 'KAS 1', title: 'Kasaysayan ng Pilipinas', units: 3 }]);
 	expect(both.fill.get('KAS 1')?.code).toBe('KAS 1');
+});
+
+test('BSCS special problem twice, midyear practicum and senior year electives', () => {
+	const sp = plannerCourseList(BSCS, 'sp', UPLB_CATALOG);
+	const gwaUnits = sp.filter((c) => !isNonGwaCourseCode(c.code)).reduce((s, c) => s + c.units, 0);
+	expect(gwaUnits).toBe(BSCS.totalUnitsRequired);
+
+	const fresh = scheduleEarliest({ courses: sp, passed: new Set(), useMidyear: false, totalUnits: 130 });
+	expect(fresh.plan.find((t) => t.courses.includes('CMSC 198'))!.sem).toBe('midyear');
+	const firstFE = Math.min(...sp.filter((c) => /^FE/.test(c.code)).map((c) => fresh.assignedTerm[c.code]));
+	expect(firstFE).toBeGreaterThanOrEqual(9);
+
+	// CMSC 56 failed with CMSC 57 passed, the practicum, and a second CMSC 190 being taken now.
+	const taken: GradesData = {
+		student_grades: {
+			1231: { values: [v('CMSC 56', 'Discrete I', 3, '5.00'), v('CMSC 12', 'Foundations', 3, '1.50')] },
+			1232: { values: [v('CMSC 57', 'Discrete II', 3, '2.00')] },
+			1253: { values: [v('CMSC 198', 'Practicum', 3, 'S')] },
+			1261: { values: [v('CMSC 190', 'Special Problem', 1, '1.50')] },
+			1262: { values: [v('CMSC 190', 'Special Problem', 2, null)] }
+		}
+	};
+	const view = compute(
+		modelFor('BSCS', 'sp')!,
+		{ gradesData: taken, substitutions: {}, customCourseStatus: {}, plannerPins: {}, plannerPetitions: {}, plannerOptions: DEFAULT_PLANNER_OPTIONS, whatif: null },
+		new Date(2027, 1, 1)
+	);
+	expect(view.info['CMSC 190'].status).toBe('passed');
+	expect(view.info['CMSC 190 (2)'].status).toBe('inprogress');
+	expect(view.info['CMSC 198'].status).toBe('passed');
+	expect(view.info['FE 1'].status).toBe('todo');
+	expect(view.conflicts).toEqual([{ code: 'CMSC 57', pre: 'CMSC 56' }]);
 });

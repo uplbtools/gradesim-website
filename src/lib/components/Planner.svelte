@@ -406,12 +406,17 @@
 				{#if sum.deltaText}<span class="pl-delta" class:ok={sum.deltaOk}><Icon name={sum.deltaOk ? 'check' : 'alert'} />{sum.deltaText}</span>{/if}
 			</p>
 			<p class="pl-sub">{sum.sub}</p>
-			{#if sum.costs.length}
+			{#if sum.costs.length || view.conflicts.length}
 				<ul class="pl-costs">
 					{#each sum.costs as c (c.code)}
 						<li class:bad={c.cost > 0}>
 							<Icon name={c.cost > 0 ? 'x' : 'check'} size={16} /><strong>{c.code}</strong>
 							{c.source === 'whatif' ? '(what-if)' : c.past ? 'failed' : '(marked failed)'}, {c.cost > 0 ? `+${termsText(c.cost)}` : 'no delay'}
+						</li>
+					{/each}
+					{#each view.conflicts as c (c.code + c.pre)}
+						<li class="bad">
+							<Icon name="alert" size={16} /><strong>{c.code}</strong> is passed, so its prerequisite {c.pre} cannot be failed. Check the mark on {c.pre}.
 						</li>
 					{/each}
 				</ul>

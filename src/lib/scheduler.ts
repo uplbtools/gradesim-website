@@ -40,6 +40,7 @@ export interface ChecklistCourse {
 	gradeType?: string;
 	/** A specialization slot: only these courses fill it. */
 	options?: string[];
+	standing?: Standing;
 }
 
 /** A course the scheduler can place. */
@@ -375,7 +376,8 @@ export function preGroups(course: Pick<PlanCourse, 'pre' | 'prereqs'> | undefine
 
 /* ---------- Curriculum + catalog merge ---------- */
 
-const CLEAN_CODE_RE = /^[A-Z]{2,6} \d{1,3}(\.\d{1,2})?[A-Z]?$/;
+// A second enrollment of one course is written "CMSC 190 (2)".
+const CLEAN_CODE_RE = /^[A-Z]{2,6} \d{1,3}(\.\d{1,2})?[A-Z]?( \(\d\))?$/;
 
 /**
  * Turn checklist rows (some garbled by PDF parsing, e.g. code "3 CHEM 18.
@@ -418,7 +420,7 @@ export function enrichCourses(
 			units: unitsFor(course, c),
 			pre: hasReq && c ? c.pre || [] : (course.prereqs || []).map((p) => [extractCode(p) || normCode(p)]),
 			co: hasReq && c ? c.co || [] : [],
-			standing: hasReq && c ? c.standing || null : null,
+			standing: hasReq && c ? c.standing || null : course.standing || null,
 			coi: !!(c && c.coi),
 			note: (c && c.note) || null,
 			offered: c ? c.offered : null,
@@ -749,4 +751,17 @@ export function computeSlips(opts: ScheduleOptions, base?: ScheduleResult): Reco
 				: r.gradTermIndex - result.gradTermIndex;
 	});
 	return slip;
+}
+
+/** Passed courses with a failed prerequisite and no passed alternative. */
+export function prereqConflicts(courses: PlanCourse[], status: (code: string) => string | false | undefined): { code: string; pre: string }[] {
+	const out: { code: string; pre: string }[] = [];
+	courses.forEach((c) => {
+		if (status(c.code) !== 'passed') return;
+		preGroups(c).forEach((g) => {
+			const failed = g.find((p) => status(p) === 'failed');
+			if (failed && !g.some((p) => status(p) === 'passed')) out.push({ code: c.code, pre: failed });
+		});
+	});
+	return out;
 }
