@@ -419,6 +419,44 @@
 		margin-top: 12px;
 	}
 
+	@media (max-width: 719px) {
+		.title {
+			display: -webkit-box;
+			-webkit-line-clamp: 2;
+			line-clamp: 2;
+			-webkit-box-orient: vertical;
+			white-space: normal;
+		}
+
+		.group li:has(.excl) {
+			display: grid;
+			grid-template: 'info units grade' 'info excl excl' / minmax(0, 1fr) auto auto;
+			gap: 4px 8px;
+		}
+
+		.group li:has(.excl) .right {
+			display: contents;
+		}
+
+		.info {
+			grid-area: info;
+		}
+
+		.units {
+			grid-area: units;
+			align-self: center;
+		}
+
+		.grade {
+			grid-area: grade;
+		}
+
+		.excl {
+			grid-area: excl;
+			justify-self: end;
+		}
+	}
+
 	@media (min-width: 720px) {
 		.subform {
 			grid-template-columns: 1fr 1fr auto;
