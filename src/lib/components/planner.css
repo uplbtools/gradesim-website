@@ -216,6 +216,7 @@
 
 .pl-result {
   max-width: 70ch;
+  text-wrap: balance;
   margin: 12px 0 20px;
   color: var(--ink);
   font-size: 0.92rem;
