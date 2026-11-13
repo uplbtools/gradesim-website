@@ -731,7 +731,17 @@ button.pl-link:hover {
   }
 
   .pl-tips {
+    width: 100%;
     margin-left: 0;
+  }
+
+  .pl-tips-pop {
+    position: static;
+    width: auto;
+    padding: 4px 8px 0;
+    border: 0;
+    background: none;
+    box-shadow: none;
   }
 
   .pl-rows {
