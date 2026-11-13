@@ -18,6 +18,7 @@ export interface GradesPatch {
 	selectedProgram?: string;
 	excludedCourses?: string[];
 	substitutions?: Record<string, string>;
+	removals?: Record<string, string>;
 	selectedSpecializations?: Record<string, string>;
 }
 
@@ -35,6 +36,9 @@ export function parseBackup(obj: unknown): GradesPatch | string {
 	if (Array.isArray(obj.excludedCourses)) patch.excludedCourses = obj.excludedCourses.map(String);
 	if (isObj(obj.substitutions) && Object.values(obj.substitutions).every((v) => typeof v === 'string')) {
 		patch.substitutions = obj.substitutions as Record<string, string>;
+	}
+	if (isObj(obj.removals) && Object.values(obj.removals).every((v) => typeof v === 'string')) {
+		patch.removals = obj.removals as Record<string, string>;
 	}
 	if (isObj(obj.selectedSpecializations) && Object.values(obj.selectedSpecializations).every((v) => typeof v === 'string')) {
 		patch.selectedSpecializations = obj.selectedSpecializations as Record<string, string>;
@@ -66,6 +70,7 @@ export function makeBackup(s: {
 	selectedProgram: string;
 	excludedCourses: string[];
 	substitutions: Record<string, string>;
+	removals?: Record<string, string>;
 	selectedSpecializations?: Record<string, string>;
 }) {
 	return {
@@ -74,6 +79,7 @@ export function makeBackup(s: {
 		selectedProgram: s.selectedProgram,
 		excludedCourses: s.excludedCourses,
 		substitutions: s.substitutions,
+		removals: s.removals ?? {},
 		selectedSpecializations: s.selectedSpecializations ?? {},
 		gradesData: s.gradesData
 	};

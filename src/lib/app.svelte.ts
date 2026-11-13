@@ -5,6 +5,7 @@ import type { ChecklistFix } from './fix.ts';
 import { DEFAULT_PROGRAM, resolveSpecialization, UPLB_PROGRAMS } from './curriculum.ts';
 import { calculateGWA, parseAMISData, type GradesData } from './grades.ts';
 import type { GradesPatch } from './importers.ts';
+import { applyRemovals } from './requirements.ts';
 import type { CourseStatus, PlannerOptions, PlannerInput, PlanFile } from './planner.ts';
 
 export const STORAGE_KEY = 'gradesim:v1';
@@ -18,6 +19,8 @@ export interface Saved {
 	selectedProgram: string;
 	excludedCourses: string[];
 	substitutions: Record<string, string>;
+	/** removalKey(termId, code) to pass or fail, for 4.00 grades. */
+	removals: Record<string, string>;
 	track: string | null;
 	/** Program code to the specialization key the student picked. */
 	selectedSpecializations: Record<string, string>;
@@ -37,6 +40,7 @@ export const blank = (): Saved => ({
 	selectedProgram: DEFAULT_PROGRAM,
 	excludedCourses: [],
 	substitutions: {},
+	removals: {},
 	track: null,
 	selectedSpecializations: {},
 	customCourseStatus: {},
@@ -70,7 +74,9 @@ class AppState {
 	/** Planning a program with no grades, from a ?program= link. Not saved. */
 	blank = $state(false);
 
-	courses = $derived(parseAMISData(this.s.gradesData));
+	/** The stored grades with removal exam results applied. */
+	grades = $derived(applyRemovals(this.s.gradesData, this.s.removals));
+	courses = $derived(parseAMISData(this.grades));
 	excluded = $derived(new Set(this.s.excludedCourses));
 	gwa = $derived(calculateGWA(this.courses, this.excluded));
 	program = $derived(UPLB_PROGRAMS[this.s.selectedProgram] ?? UPLB_PROGRAMS[DEFAULT_PROGRAM]);
@@ -97,6 +103,7 @@ class AppState {
 		if (patch.selectedProgram) this.s.selectedProgram = patch.selectedProgram;
 		if (patch.excludedCourses) this.s.excludedCourses = patch.excludedCourses;
 		if (patch.substitutions) this.s.substitutions = patch.substitutions;
+		if (patch.removals) this.s.removals = patch.removals;
 		if (patch.selectedSpecializations) this.s.selectedSpecializations = patch.selectedSpecializations;
 	}
 
@@ -125,6 +132,14 @@ class AppState {
 		this.s.plannerOptions = plan.plannerOptions;
 		this.s.substitutions = plan.substitutions;
 		this.whatif = plan.whatif;
+	}
+
+	/** Record a removal exam result for a 4.00, or clear it with an empty result. */
+	setRemoval(key: string, result: string) {
+		const all = { ...this.s.removals };
+		if (result) all[key] = result;
+		else delete all[key];
+		this.s.removals = all;
 	}
 
 	toggleExcluded(id: string) {

@@ -39,11 +39,11 @@
 	import StatusLabel from './StatusLabel.svelte';
 	import './planner.css';
 
-	const model = $derived(modelFor(app.s.selectedProgram, planTrack(app.program, app.s.gradesData, app.s.track), app.specialization, app.fixes));
+	const model = $derived(modelFor(app.s.selectedProgram, planTrack(app.program, app.grades, app.s.track), app.specialization, app.fixes));
 	const quality = $derived(getProgramDataQuality(app.s.selectedProgram));
 	const options = $derived(app.s.plannerOptions ?? DEFAULT_PLANNER_OPTIONS);
 	const input = $derived<PlannerInput>({
-		gradesData: app.s.gradesData,
+		gradesData: app.grades,
 		substitutions: app.s.substitutions,
 		customCourseStatus: app.s.customCourseStatus,
 		plannerPins: app.s.plannerPins,

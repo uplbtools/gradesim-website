@@ -8,9 +8,9 @@
 	import Notice from './Notice.svelte';
 
 	// Counts come from requirements.ts, the same code the planner uses, so both show the same units left.
-	const rows = $derived(amisCourses(app.s.gradesData));
+	const rows = $derived(amisCourses(app.grades));
 	const detected = $derived(detectTrack(app.program, rows));
-	const track = $derived(planTrack(app.program, app.s.gradesData, app.s.track));
+	const track = $derived(planTrack(app.program, app.grades, app.s.track));
 	const quality = $derived(getProgramDataQuality(app.program.code));
 	const left = $derived.by(() => {
 		const model = app.program.available ? modelFor(app.program.code, track, app.specialization, app.fixes) : null;

@@ -15,6 +15,8 @@ export interface AmisGradeValue {
 	status?: string;
 	course?: { course_code?: string; title?: string };
 	grade_term?: { term?: string; ay?: string };
+	/** The 4.00 a removal exam result replaced. */
+	removalFrom?: string;
 }
 
 export interface AmisTerm {
@@ -81,6 +83,7 @@ export interface Course {
 	title: string;
 	units: number;
 	grade: string;
+	removalFrom?: string;
 }
 
 export const NON_NUMERIC_GRADES = ['S', 'U', 'INC', 'DRP', 'W', 'P', 'DFG'];
@@ -119,7 +122,8 @@ export function parseAMISData(data: GradesData | null | undefined): Course[] {
 				code,
 				title: v.course?.title || 'Unknown',
 				units: parseInt(String(v.unit_taken ?? '')) || 0,
-				grade: gradeText(v.grade)
+				grade: gradeText(v.grade),
+				removalFrom: v.removalFrom
 			});
 		}
 	}
@@ -211,6 +215,13 @@ export function groupGWA(courses: Course[], excludedIds: Set<string> = new Set()
 	return { gwa: totalUnits > 0 ? weighted / totalUnits : 0, totalUnits, hasFailOrInc };
 }
 
+/** Terms with a failing or INC grade in HK or NSTP. Those stay out of the GWA, but a scholar list still needs them passed. */
+export function scholarHolds(courses: Course[]): Set<string> {
+	return new Set(
+		courses.filter((c) => isPrefixExcluded(c.code) && (c.grade === 'INC' || (numericGrade(c.grade) ?? 0) > 3)).map((c) => c.termKey)
+	);
+}
+
 export interface Group {
 	key: string;
 	label: string;
@@ -244,7 +255,7 @@ export function honorFor(gwa: number, totalUnits: number) {
 	return HONORS.find((h) => gwa <= h.max) ?? null;
 }
 
-/** University or College Scholar for one term. Needs at least 15 units and no 5.00, 4.00 or INC. */
+/** University or College Scholar for one term. Needs at least 15 academic units and no 5.00, 4.00 or INC. */
 export function scholarFor(group: ReturnType<typeof groupGWA>): string | null {
 	if (!(group.gwa > 0) || group.totalUnits < 15 || group.hasFailOrInc) return null;
 	if (group.gwa <= 1.45) return 'University Scholar';
@@ -262,7 +273,7 @@ export function gradeTone(grade: string): GradeTone {
 	if (n <= 1.5) return 'excellent';
 	if (n <= 2.0) return 'good';
 	if (n >= 5) return 'failed';
-	return 'passing';
+	return n > 3 ? 'other' : 'passing';
 }
 
 export const formatGrade = (grade: string) => {

@@ -2,11 +2,13 @@ import { expect, test } from 'vitest';
 import backup from './fixtures/backup.json';
 import {
 	calculateGWA,
+	gradeTone,
 	groupCourses,
 	groupGWA,
 	honorFor,
 	parseAMISData,
 	scholarFor,
+	scholarHolds,
 	sortedTermKeys,
 	substituteOptions,
 	termKeyToAbs,
@@ -114,4 +116,15 @@ test('substitute options leave out required, GE and already used courses', () =>
 	];
 	expect(substituteOptions(UPLB_PROGRAMS.BSCS, done, {}).map((c) => c.code)).toEqual(['ECON 11', 'PED 101']);
 	expect(substituteOptions(UPLB_PROGRAMS.BSCS, done, { 'MATH 27': 'PED 101' }).map((c) => c.code)).toEqual(['ECON 11']);
+});
+
+test('a failing or INC grade in HK or NSTP holds the scholar badge for that term', () => {
+	const row = (code: string, grade: string, termKey: string): Course => ({ id: code + termKey, termKey, termLabel: '', ay: '', code, title: '', units: 2, grade });
+	const holds = scholarHolds([row('HK 11', '5.00', '1231'), row('NSTP 1', 'INC', '1232'), row('HK 12', '1.00', '1241'), row('MATH 27', '5.00', '1242')]);
+	expect([...holds]).toEqual(['1231', '1232']);
+});
+
+test('a 4.00 is not a passing grade', () => {
+	expect(gradeTone('4.00')).toBe('other');
+	expect(gradeTone('3.00')).toBe('passing');
 });
