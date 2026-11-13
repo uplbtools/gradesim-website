@@ -158,7 +158,12 @@
 .pl-check {
   flex-direction: row;
   align-items: center;
+  justify-content: flex-start;
   gap: 8px;
+}
+
+.pl-check input {
+  flex: none;
 }
 
 .pl-danger {
