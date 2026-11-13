@@ -32,7 +32,7 @@ test('unknown URLs get the branded 404', async ({ page }) => {
 
 test('curricula lists planner programs that have no checklist image', async ({ page }) => {
 	await page.goto('/curricula/');
-	await expect(page.getByRole('link', { name: /BS Computer Science.*Planner only/ })).toHaveAttribute('href', '/?program=BSCS#planner');
+	await expect(page.getByRole('link', { name: /BS Computer Science.*planner only/ })).toHaveAttribute('href', '/?program=BSCS#planner');
 });
 
 test('manual entry: add courses by hand and the GWA shows', async ({ page }) => {
