@@ -289,7 +289,7 @@
 		<aside class="pl-detail" aria-label="Details for {code}">
 			<div class="pl-detail-head">
 				<div>
-					<p class="pl-detail-code">{c.code} <StatusLabel status={card ? card.status : i.status === 'failed' ? 'failed' : 'planned'} /></p>
+					<p class="pl-detail-code">{c.code} <StatusLabel status={card ? card.status : i.status === 'failed' ? 'failed' : 'planned'} label={card?.waitingOn ? `Waiting on ${card.waitingOn}` : undefined} /></p>
 					<p class="pl-detail-title">{c.title}</p>
 				</div>
 				<button type="button" class="pl-close" aria-label="Close details" onclick={() => select(code)}><Icon name="x" /></button>
@@ -297,9 +297,8 @@
 			<p class="pl-muted">
 				{`${c.units} units, offered ${offeringLabel(c).toLowerCase()}${off && !c.fixed ? ` (${off[1] ?? 0} of 4 first sems, ${off[2] ?? 0} of 3 second sems, ${off[3] ?? 0} of 2 midyears seen)` : ''}.${t !== undefined ? ` Planned for ${absLabel(view.startAbs + t)}.` : ''}`}
 			</p>
-			{#if card?.waitingOn}<p class="pl-note"><Icon name="lock" size={14} />Waiting on {card.waitingOn}</p>{/if}
 			<ul class="pl-metrics">
-				<li><strong>{blocking}</strong> {blocking === 1 ? 'course' : 'courses'} blocked if this is failed</li>
+				{#if blocking}<li><strong>{blocking}</strong> {blocking === 1 ? 'course' : 'courses'} blocked if this is failed</li>{/if}
 				<li><strong>{delay}</strong> {delay === 1 ? 'course' : 'courses'} on the longest chain through it</li>
 				{#if slip !== undefined}
 					{#if slip > 0}

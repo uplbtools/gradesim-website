@@ -478,23 +478,6 @@
   color: var(--muted);
 }
 
-.pl-note {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  margin-top: 2px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  font-size: 0.72rem;
-  font-weight: 600;
-  color: var(--body);
-}
-
-.pl-note.warn {
-  color: var(--warn);
-}
-
 .pl-status.st-passed,
 .pl-row.st-passed .pl-mark { color: var(--ok); }
 
