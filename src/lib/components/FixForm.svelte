@@ -43,6 +43,7 @@
 </script>
 
 <form class="pl-fix" onsubmit={save}>
+	<p><strong>{course ? `Fix ${course.code}` : 'Add a missing course'}</strong></p>
 	{#if !course}
 		<label class="field">Course code<input class="input" bind:value={code} placeholder="CMSC 123" required /></label>
 		<label class="field">Title<input class="input" bind:value={title} maxlength="120" required /></label>
@@ -61,7 +62,7 @@
 	</fieldset>
 	<label class="field">
 		Note for the maintainers (optional)
-		<input class="input" bind:value={note} maxlength="300" placeholder="Where you saw this, such as your curriculum year" />
+		<input class="input" bind:value={note} maxlength="300" placeholder="Where you saw this" />
 	</label>
 	{#if error}<p class="pl-fix-error" role="alert">{error}</p>{/if}
 	<div class="pl-actions">
