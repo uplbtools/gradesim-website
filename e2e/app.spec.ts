@@ -72,10 +72,10 @@ test('planner renders and a failed course shows a retake', async ({ page }) => {
 	await importFixture(page);
 	await page.getByRole('tab', { name: 'Planner' }).click();
 	await expect(page.getByTestId('grad-term')).toContainText('Graduate');
-	const grid = page.getByTestId('planner-grid');
-	await expect(grid.locator('.pl-card.st-retake[data-code="MATH 27"]')).toBeVisible();
-	await expect(grid.locator('.pl-card.st-failed[data-code="MATH 27"]')).toBeVisible();
-	await grid.locator('.pl-card.st-retake[data-code="MATH 27"]').click();
+	const sheet = page.getByTestId('planner-sheet');
+	await expect(sheet.locator('.pl-row.st-retake[data-code="MATH 27"]')).toBeVisible();
+	await expect(sheet.locator('.pl-row.st-failed[data-code="MATH 27"]')).toBeVisible();
+	await sheet.locator('.pl-row.st-retake[data-code="MATH 27"]').click();
 	await expect(page.getByRole('complementary', { name: 'Details for MATH 27' })).toContainText('Analytic Geometry');
 	await expect(page).toHaveURL(/#planner$/);
 });
@@ -132,12 +132,12 @@ test('@phone mobile layout stacks the planner terms', async ({ page }) => {
 	const noSideScroll = () => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth);
 	expect(await noSideScroll()).toBe(true);
 	await page.getByRole('tab', { name: 'Planner' }).click();
-	const grid = page.getByTestId('planner-grid');
-	await expect(grid).toHaveCSS('flex-direction', 'column');
+	const sheet = page.getByTestId('planner-sheet');
+	await expect(sheet).toHaveCSS('flex-direction', 'column');
 	expect(await noSideScroll()).toBe(true);
-	await grid.locator('.pl-card.st-retake[data-code="MATH 27"]').click();
+	await sheet.locator('.pl-row.st-retake[data-code="MATH 27"]').click();
 	// On phones the details open inline, inside the term list.
-	await expect(grid.getByRole('complementary', { name: 'Details for MATH 27' })).toBeVisible();
+	await expect(sheet.getByRole('complementary', { name: 'Details for MATH 27' })).toBeVisible();
 });
 
 test('imports from the extension through the window bridge', async ({ page }) => {

@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount, tick } from 'svelte';
 	import { app, download } from '#lib/app.svelte.ts';
+	import { groupGWA, termKeyToAbs } from '#lib/grades.ts';
 	import { parseImport } from '#lib/importers.ts';
 	import { UPLB_CATALOG } from '#lib/catalog.ts';
 	import { getProgramDataQuality, UPLB_PROGRAMS } from '#lib/curriculum.ts';
@@ -12,7 +13,6 @@
 		compute,
 		DEFAULT_PLANNER_OPTIONS,
 		exportModel,
-		isCritical,
 		makePlanFile,
 		modelFor,
 		offeringLabel,
@@ -25,11 +25,10 @@
 		today,
 		whatIfMessage,
 		type Card,
-		type CardStatus,
+		type Column,
 		type PlannerInput,
 		type WhatIfMode
 	} from '#lib/planner.ts';
-	import { routeEdges, type Rect } from '#lib/route-edges.ts';
 	import { preGroups } from '#lib/scheduler.ts';
 	import { buildPlannerSheets, writeXlsx } from '#lib/xlsx.ts';
 	import Icon, { type IconName } from './Icon.svelte';
@@ -60,8 +59,6 @@
 	});
 
 	let selected = $state<string | null>(null);
-	let hover = $state<string | null>(null);
-	let phone = $state(false);
 	let status = $state('');
 	let notice = $state<{ text: string; bad: boolean } | null>(null);
 	let wiMode = $state<WhatIfMode>(app.whatif?.mode ?? 'fail');
@@ -69,92 +66,46 @@
 	let wiResult = $state('');
 	let menu: HTMLDetailsElement | undefined = $state();
 	let planInput: HTMLInputElement | undefined = $state();
-	let gridEl: HTMLDivElement | undefined = $state();
-	let paths = $state<{ d: string; kind: string }[]>([]);
-	let svgSize = $state({ w: 0, h: 0 });
-	let relayout = $state(0);
+	let sheetEl: HTMLDivElement | undefined = $state();
 
-	const focusCode = $derived(hover ?? selected);
 	const chain = $derived.by(() => {
-		if (!focusCode || !model) return null;
-		const anc = model.graph.ancestors(focusCode);
-		const desc = model.graph.descendants(focusCode);
-		return { anc, desc, all: new Set([focusCode, ...anc, ...desc]) };
+		if (!selected || !model) return null;
+		return new Set([selected, ...model.graph.ancestors(selected), ...model.graph.descendants(selected)]);
 	});
 
 	onMount(() => {
-		const mq = window.matchMedia('(max-width: 719px)');
-		phone = mq.matches;
-		const onChange = () => (phone = mq.matches);
-		mq.addEventListener('change', onChange);
-		const onResize = () => relayout++;
-		window.addEventListener('resize', onResize);
 		if (app.whatif && view) wiResult = whatIfMessage(view);
-		return () => {
-			mq.removeEventListener('change', onChange);
-			window.removeEventListener('resize', onResize);
-		};
 	});
 
-	// Draw prerequisite arrows after layout: the focused course's chain, plus the critical path.
-	$effect(() => {
-		void relayout;
-		const v = view;
-		const ch = chain;
-		const focus = focusCode;
-		const grid = gridEl;
-		if (!v || !grid || phone || !layout) {
-			paths = [];
-			return;
-		}
-		const frame = requestAnimationFrame(() => {
-			const gridRect = grid.getBoundingClientRect();
-			svgSize = { w: grid.scrollWidth, h: grid.scrollHeight };
-			const nodeOf = (code: string) => grid.querySelector<HTMLElement>(`.pl-card[data-primary][data-code="${CSS.escape(code)}"]`);
-			const crit = (code: string) => isCritical(code, v);
-			const rect = (el: HTMLElement): Rect => {
-				const r = el.getBoundingClientRect();
-				return { x: r.left - gridRect.left, y: r.top - gridRect.top, w: r.width, h: r.height };
-			};
-			const drawn: { kind: string; from: Rect; to: Rect }[] = [];
-			v.model.graph.edges.forEach(({ from, to }) => {
-				let kind: string | null = null;
-				if (ch) {
-					const up = (to === focus || ch.anc.has(to)) && ch.anc.has(from);
-					const down = (from === focus || ch.desc.has(from)) && ch.desc.has(to);
-					if (up || down) kind = 'chain';
-				}
-				if (!kind && crit(from) && crit(to)) kind = 'crit';
-				if (!kind) return;
-				const a = nodeOf(from);
-				const b = nodeOf(to);
-				if (!a || !b || a.closest('details:not([open])') || b.closest('details:not([open])')) return;
-				const ra = rect(a);
-				const rb = rect(b);
-				if (ra.x + ra.w > rb.x) return; // same column or backwards: coreq-like, skip
-				drawn.push({ kind, from: ra, to: rb });
+	// Academic years, each with its terms. Named courses come first, then the GE, HK, NSTP and elective slots.
+	const years = $derived.by(() => {
+		if (!view || !layout || !model) return [];
+		const slot = (card: Card) => (model.byCode.get(card.code)!.genericRequirement ? 1 : 0);
+		const out: { label: string; terms: { column: Column; f: ReturnType<typeof columnFacts>; name: string; sem?: number; gwa: number; cards: Card[]; failed: number }[] }[] = [];
+		layout.list.forEach((column) => {
+			const f = columnFacts(column, view);
+			const dated = Number.isFinite(column.abs) && column.abs >= 0;
+			const label = dated ? f.sub : f.name;
+			if (out.at(-1)?.label !== label) out.push({ label, terms: [] });
+			out.at(-1)!.terms.push({
+				column,
+				f,
+				name: dated ? f.name : f.sub,
+				sem: dated ? column.abs % 3 : undefined,
+				gwa: f.isPast ? groupGWA(app.courses.filter((c) => termKeyToAbs(c.termKey) === column.abs), app.excluded).gwa : 0,
+				cards: [...column.cards].sort((a, b) => slot(a) - slot(b) || a.code.localeCompare(b.code, undefined, { numeric: true })),
+				failed: column.cards.filter((c) => c.status === 'failed' && !c.hypothetical).length
 			});
-			// Arrows travel the lattice gaps like routed cables (route-edges.ts).
-			const css = getComputedStyle(grid);
-			const colGap = parseFloat(css.getPropertyValue('--pl-col-gap')) || 36;
-			const rowGap = parseFloat(css.getPropertyValue('--pl-row-gap')) || 20;
-			paths = routeEdges(drawn, { colGap, rowGap }).map(({ d }, i) => ({ d, kind: drawn[i].kind }));
 		});
-		return () => cancelAnimationFrame(frame);
+		return out;
 	});
-
-	function cardClass(card: Card, primary: boolean, crit: boolean) {
-		const c = ['pl-card', `st-${card.status}`];
-		if (crit) c.push('crit');
-		if (card.history || card.hypothetical) c.push('history');
-		if (chain) c.push(card.code === focusCode && primary ? 'focus' : chain.all.has(card.code) ? 'chain' : 'dim');
-		return c.join(' ');
-	}
 
 	async function focusCard(code: string) {
 		await tick();
-		const el = gridEl?.querySelector<HTMLElement>(`.pl-card[data-primary][data-code="${CSS.escape(code)}"]`);
-		el?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+		const el = sheetEl?.querySelector<HTMLElement>(`.pl-row[data-primary][data-code="${CSS.escape(code)}"]`);
+		const term = el?.closest('details');
+		if (term) term.open = true;
+		el?.scrollIntoView({ block: 'nearest' });
 		el?.focus({ preventScroll: true });
 	}
 
@@ -288,8 +239,6 @@
 		}
 	}
 
-	const LEGEND: CardStatus[] = ['passed', 'inprogress', 'failed', 'retake', 'ready', 'planned', 'locked'];
-	const icon = (s: CardStatus) => STATUS[s][0] as IconName;
 </script>
 
 <svelte:window onclick={onWindowClick} onkeydown={onKey} />
@@ -410,13 +359,14 @@
 				<ul class="pl-costs">
 					{#each sum.costs as c (c.code)}
 						<li class:bad={c.cost > 0}>
-							<Icon name={c.cost > 0 ? 'x' : 'check'} size={16} /><strong>{c.code}</strong>
-							{c.source === 'whatif' ? '(what-if)' : c.past ? 'failed' : '(marked failed)'}, {c.cost > 0 ? `+${termsText(c.cost)}` : 'no delay'}
+							<Icon name={c.cost > 0 ? 'x' : 'check'} size={16} />
+							<span><strong>{c.code}</strong> {c.source === 'whatif' ? '(what-if)' : c.past ? 'failed' : '(marked failed)'}, {c.cost > 0 ? `+${termsText(c.cost)}` : 'no delay'}</span>
 						</li>
 					{/each}
 					{#each view.conflicts as c (c.code + c.pre)}
 						<li class="bad">
-							<Icon name="alert" size={16} /><strong>{c.code}</strong> is passed, so its prerequisite {c.pre} cannot be failed. Check the mark on {c.pre}.
+							<Icon name="alert" size={16} />
+							<span><strong>{c.code}</strong> is passed, so its prerequisite {c.pre} cannot be failed. Check the mark on {c.pre}.</span>
 						</li>
 					{/each}
 				</ul>
@@ -438,6 +388,15 @@
 				<button class="btn btn-primary" type="submit">Simulate</button>
 				{#if app.whatif}<button class="textbtn" type="button" onclick={clearWhatif}>Clear</button>{/if}
 			</form>
+			<details class="pl-tips">
+				<summary><Icon name="info" size={16} />How to read this</summary>
+				<div class="pl-tips-pop">
+					<p>Each block is a term. Past terms come from your grades. Future terms are the earliest plan that respects prerequisites, the sems each course is actually offered, and your unit cap.</p>
+					<p>Select a course to see what it requires, what it unlocks and how many courses a failure would block. Mark a course failed to see the retake and the delay.</p>
+					<p>A course marked Critical delays graduation if it slips by one term.</p>
+					<p>Offerings come from AMIS class listings for 2023 to 2026. Free electives are not included.</p>
+				</div>
+			</details>
 			<details class="pl-menu" bind:this={menu}>
 				<summary class="btn btn-secondary">Plan options<Icon name="chevron" /></summary>
 				<div class="pl-menu-pop">
@@ -464,7 +423,7 @@
 					<label class="pl-menu-item pl-check"><input type="checkbox" checked={options.midyear9} onchange={(e) => setOptions({ midyear9: e.currentTarget.checked })} /> Midyear up to 9 units (Dean's approval)</label>
 					<button type="button" class="pl-menu-item" onclick={savePlan}>Save plan<small>Download your marks, moves and options as a file</small></button>
 					<button type="button" class="pl-menu-item" onclick={() => planInput?.click()}>Load plan<small>Restore a plan file you saved earlier</small></button>
-					<button type="button" class="pl-menu-item" onclick={exportXlsx}>Export to Excel<small>A color-coded sheet laid out like this map</small></button>
+					<button type="button" class="pl-menu-item" onclick={exportXlsx}>Export to Excel<small>A color-coded sheet with one column per term</small></button>
 					<button type="button" class="pl-menu-item pl-danger" onclick={resetPlan}>Reset plan<small>Clears marks, moves and petitions</small></button>
 				</div>
 			</details>
@@ -481,88 +440,66 @@
 			/>
 		</section>
 
-		<div class="pl-legend">
-			{#each LEGEND as s (s)}<span class="pl-chip st-{s}"><Icon name={icon(s)} size={14} />{STATUS[s][1]}</span>{/each}
-			<span class="pl-chip crit-chip">Critical</span>
-			<span class="pl-chip"><Icon name="flag" size={14} />Petition</span>
-			<details class="pl-tips">
-				<summary><Icon name="info" size={16} />How to read this</summary>
-				<div class="pl-tips-pop">
-					<p>Each column is a term. Past terms come from your grades. Future terms are the earliest plan that respects prerequisites, the sems each course is actually offered, and your unit cap.</p>
-					<p>Select a course to see its full prerequisite chain, what it unlocks and how many courses a failure would block. Mark a course failed to see the retake and the delay.</p>
-					<p>Thin maroon lines are the critical path, the courses where a one-term slip delays graduation.</p>
-					<p>Offerings come from AMIS class listings for 2023 to 2026. Free electives are not included.</p>
-				</div>
-			</details>
-		</div>
-
 		<p class="pl-result" aria-live="polite">{wiResult}</p>
 
-		<div class="pl-scroll">
-			<svg class="pl-arrows" width={svgSize.w} height={svgSize.h} aria-hidden="true">
-				<defs>
-					<marker id="pl-arrow-chain" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8 z" class="pl-arrowhead" /></marker>
-					<marker id="pl-arrow-crit" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0 0 L6 3 L0 6 z" class="pl-arrowhead" /></marker>
-				</defs>
-				{#each paths as p, k (k)}<path class="pl-edge {p.kind}" d={p.d} marker-end="url(#pl-arrow-{p.kind})" />{/each}
-			</svg>
-			<div
-				class="pl-grid"
-				data-testid="planner-grid"
-				bind:this={gridEl}
-				role="presentation"
-				onmouseleave={() => (hover = null)}
-				ontoggle={() => relayout++}
-			>
-				{#each layout.list as column (column.abs)}
-					{@const f = columnFacts(column, view)}
-					<section class="pl-col" class:past={f.isPast} aria-label="{f.name} {f.sub}">
-						<details open={!(phone && f.isPast)}>
-							<summary class="pl-col-head">
-								<span class="pl-col-name">{f.name} {#if f.tag}<span class="pl-tag {f.tag === 'Now' ? 'now' : f.tag === 'Taken' ? 'past' : ''}">{f.tag}</span>{/if}</span>
-								<span class="pl-col-sub">{f.sub}<span class="pl-col-units" class:warn={f.loud} title={f.warn || undefined}>{#if f.loud}<Icon name="alert" size={13} />{/if}{f.units} units</span></span>
+		<div class="pl-sheet" data-testid="planner-sheet" bind:this={sheetEl}>
+			{#each years as year (year.label)}
+				<section class="pl-year" aria-label={year.label}>
+					<h3>{year.label}</h3>
+					{#each year.terms as term (term.column.abs)}
+						{@const f = term.f}
+						<details class="pl-term" class:past={f.isPast} data-sem={term.sem} open={!f.isPast || f.tag === 'Now' || term.failed > 0}>
+							<summary>
+								<Icon name="chevron" size={16} />
+								<span class="pl-term-name">{term.name}</span>
+								{#if f.tag === 'Next' || f.tag === 'Now'}<span class="pl-term-tag">{f.tag === 'Next' ? 'next' : 'now'}</span>{/if}
+								<span class="pl-term-facts">
+									{#if term.failed}<span class="bad">{term.failed} failed</span>{/if}
+									{#if term.gwa}<span>GWA {term.gwa.toFixed(4)}</span>{/if}
+									<span class:warn={f.loud} title={f.warn || undefined}>{#if f.loud}<Icon name="alert" size={13} />{/if}{f.units} units</span>
+								</span>
 								{#if f.warn}<span class="visually-hidden">{f.warn}</span>{/if}
 							</summary>
-							<div class="pl-cards">
-								{#each column.cards as card (card)}
+							<ul class="pl-rows">
+								{#each term.cards as card (card)}
 									{@const c = model.byCode.get(card.code)!}
 									{@const facts = cardFacts(card, view)}
 									{@const isPrimary = layout.primary[card.code] === card}
-									<div
-										class={cardClass(card, isPrimary, facts.crit)}
-										role="button"
-										tabindex="0"
-										data-code={card.code}
-										data-primary={isPrimary ? '1' : undefined}
-										aria-pressed={selected === card.code && isPrimary}
-										aria-label="{c.code}, {c.title}. {facts.statusLabel}{facts.crit ? ', critical' : ''}. {c.units} units, {offeringLabel(c)}.{card.waitingOn ? ` Waiting on ${card.waitingOn}.` : ''}"
-										onclick={() => select(card.code)}
-										onkeydown={(e) => {
-											if (e.key === 'Enter' || e.key === ' ') {
-												e.preventDefault();
-												select(card.code);
-											}
-										}}
-										onmouseenter={() => (hover = card.code)}
-									>
-										<span class="pl-card-top"><StatusLabel status={card.status} label={facts.statusLabel} /><span class="pl-units">{c.units}u</span></span>
-										<span class="pl-code">{c.code}{#if card.pinned}<span class="pl-pin" title="Moved later by you"> *</span>{/if}</span>
-										<span class="pl-title">{c.title}</span>
-										<span class="pl-card-foot"><span class="pl-offer">{offeringLabel(c)}</span>{#if facts.crit}<span class="pl-crit">Critical</span>{/if}</span>
-										{#if facts.note}<span class="pl-note" class:warn={facts.note.warn}>{#if facts.note.icon}<Icon name={facts.note.icon as IconName} size={13} />{/if}{facts.note.text}</span>{/if}
-									</div>
-									{#if phone && isPrimary && selected === card.code}{@render detail(card.code)}{/if}
+									{@const word = card.status === 'passed' || card.status === 'planned' || card.status === 'ready' ? '' : facts.statusLabel}
+									<li>
+										<button
+											type="button"
+											class="pl-row st-{card.status}"
+											class:history={card.history || card.hypothetical}
+											class:chain={chain?.has(card.code) && !(selected === card.code && isPrimary)}
+											class:dim={chain && !chain.has(card.code)}
+											data-code={card.code}
+											data-primary={isPrimary ? '1' : undefined}
+											aria-pressed={selected === card.code && isPrimary}
+											aria-label="{c.code}, {c.title}. {facts.statusLabel}{facts.crit ? ', critical' : ''}. {c.units} units{card.grade ? `, grade ${card.grade}` : ''}.{card.waitingOn ? ` Waiting on ${card.waitingOn}.` : ''}"
+											onclick={() => select(card.code)}
+										>
+											<span class="pl-mark"><Icon name={STATUS[card.status][0] as IconName} size={16} /></span>
+											<span class="pl-code">{c.code}{#if card.pinned}<span class="pl-pin" title="Moved later by you"> *</span>{/if}</span>
+											<span class="pl-title">{c.title}</span>
+											<span class="pl-row-note" class:warn={facts.note?.warn}>
+												{[facts.note?.text ?? word, facts.crit ? 'Critical' : ''].filter(Boolean).join(', ')}
+											</span>
+											<span class="pl-row-units">{c.units}</span>
+											<span class="pl-row-grade">{card.grade ?? ''}</span>
+										</button>
+										{#if isPrimary && selected === card.code}{@render detail(card.code)}{/if}
+									</li>
 								{:else}
-									<p class="pl-empty">Nothing offered that fits</p>
+									<li class="pl-empty">Nothing offered that fits</li>
 								{/each}
-							</div>
+							</ul>
 						</details>
-					</section>
-				{/each}
-			</div>
+					{/each}
+				</section>
+			{/each}
 		</div>
 
-		{#if !phone && selected && model.byCode.has(selected)}{@render detail(selected)}{/if}
 		<span class="visually-hidden" aria-live="polite">{status}</span>
 	</div>
 {/if}
