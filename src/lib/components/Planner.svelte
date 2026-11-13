@@ -478,8 +478,8 @@
 
 		<p class="pl-result" aria-live="polite">{wiResult}</p>
 
-		<section class="pl-fixes" aria-label="Your fixes to this checklist">
-			{#if app.fixes.length}
+		{#if app.fixes.length}
+			<section class="pl-fixes" aria-label="Your fixes to this checklist">
 				<h3>Your fixes to this checklist</h3>
 				<ul>
 					{#each app.fixes as f (f.code)}
@@ -490,13 +490,11 @@
 					{/each}
 				</ul>
 				<p class="pl-muted">Your plan already uses these. Sending them lets UPLB Tools fix the checklist for everyone. Only the fixes are sent, never your grades.</p>
-			{/if}
-			<div class="pl-actions">
-				{#if app.fixes.some((f) => !f.sent)}<button type="button" class="btn btn-secondary" onclick={sendFixes}><Icon name="upload" />Send to UPLB Tools</button>{/if}
-				{#if fixing !== 'add'}<button type="button" class="textbtn" onclick={() => (fixing = 'add')}>Add a course the checklist is missing</button>{/if}
-			</div>
-			{#if fixing === 'add'}<FixForm onsave={saveFix} oncancel={() => (fixing = null)} />{/if}
-		</section>
+				<div class="pl-actions">
+					{#if app.fixes.some((f) => !f.sent)}<button type="button" class="btn btn-secondary" onclick={sendFixes}><Icon name="upload" />Send to UPLB Tools</button>{/if}
+				</div>
+			</section>
+		{/if}
 
 		<div class="pl-sheet" data-testid="planner-sheet" bind:this={sheetEl}>
 			{#each years as year (year.label)}
@@ -554,6 +552,14 @@
 					{/each}
 				</section>
 			{/each}
+		</div>
+
+		<div class="pl-fixes pl-add">
+			{#if fixing === 'add'}
+				<FixForm onsave={saveFix} oncancel={() => (fixing = null)} />
+			{:else}
+				<button type="button" class="textbtn" onclick={() => (fixing = 'add')}>Add a course the checklist is missing</button>
+			{/if}
 		</div>
 
 		<span class="visually-hidden" aria-live="polite">{status}</span>

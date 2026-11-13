@@ -268,6 +268,10 @@
   margin-top: 8px;
 }
 
+.pl-add {
+  margin: 20px 0 0;
+}
+
 .pl-fix {
   display: grid;
   gap: 10px;
@@ -343,6 +347,7 @@
 }
 
 .pl-term-name {
+  white-space: nowrap;
   font-weight: 600;
   color: var(--ink);
 }
@@ -365,6 +370,7 @@
   display: flex;
   gap: 12px;
   margin-left: auto;
+  white-space: nowrap;
   font-size: 0.8rem;
   font-variant-numeric: tabular-nums;
   color: var(--muted);
