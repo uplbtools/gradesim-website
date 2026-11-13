@@ -455,6 +455,19 @@
 			grid-area: excl;
 			justify-self: end;
 		}
+
+		.group li:has(.mini) {
+			flex-wrap: wrap;
+			row-gap: 6px;
+		}
+
+		.group li:has(.mini) .info {
+			flex: 1 1 100%;
+		}
+
+		.group li:has(.mini) .right {
+			margin-left: auto;
+		}
 	}
 
 	@media (min-width: 720px) {
