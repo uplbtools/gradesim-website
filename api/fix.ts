@@ -1,4 +1,5 @@
-import { fixIssue, validateFix, type ChecklistFix } from '../src/lib/fix.ts';
+// Vercel compiles this file without a bundler, so the import names the emitted .js file.
+import { fixIssue, validateFix, type ChecklistFix } from '../src/lib/fix.js';
 
 // Files a student's checklist fixes as one GitHub issue. Only the fixes arrive here, never grades.
 export async function POST(request: Request): Promise<Response> {
