@@ -124,6 +124,13 @@ test('theme toggle cycles and persists', async ({ page }) => {
 	await expect(html).not.toHaveAttribute('data-theme');
 });
 
+test('curricula deep link opens the planner without grades', async ({ page }) => {
+	await open(page, '/?program=BSCS#planner');
+	await expect(page.getByTestId('planner-sheet')).toBeVisible();
+	await page.getByRole('button', { name: 'Add your grades' }).click();
+	await expect(page.getByRole('link', { name: 'Install the extension' }).first()).toBeVisible();
+});
+
 test('curricula deep link picks the program in the planner', async ({ page }) => {
 	await importFixture(page);
 	await open(page, '/?program=BSBIO#planner');
