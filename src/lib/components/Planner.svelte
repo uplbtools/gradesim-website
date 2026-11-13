@@ -350,6 +350,12 @@
 				{#if app.s.plannerPins[code] != null}<button type="button" class="textbtn" onclick={() => act('unpin', code)}>Back to earliest</button>{/if}
 			</div>
 			{#if acted === code && sum}<p><strong>{sum.headline}.{sum.deltaText ? ` ${sum.deltaText}.` : ''}</strong></p>{/if}
+			{#if restricted(c) && i.status !== 'passed'}
+				<label class="pl-petition">
+					<input type="checkbox" checked={!!app.s.plannerPetitions[code]} onchange={(e) => togglePetition(code, e.currentTarget.checked)} />
+					<span>Plan on a petitioned class when it is not offered. It needs about 10 students and department, college and OVCAA approval, so treat it as conditional.</span>
+				</label>
+			{/if}
 			{#if fixing === code}
 				<FixForm course={c} onsave={saveFix} oncancel={() => (fixing = null)} />
 			{:else if fix}
@@ -360,12 +366,6 @@
 				</p>
 			{:else if !c.genericRequirement}
 				<p class="pl-muted">Is something wrong here? <button type="button" class="textbtn" onclick={() => (fixing = code)}>Fix this course</button></p>
-			{/if}
-			{#if restricted(c) && i.status !== 'passed'}
-				<label class="pl-petition">
-					<input type="checkbox" checked={!!app.s.plannerPetitions[code]} onchange={(e) => togglePetition(code, e.currentTarget.checked)} />
-					<span>Plan on a petitioned class when it is not offered. It needs about 10 students and department, college and OVCAA approval, so treat it as conditional.</span>
-				</label>
 			{/if}
 		</aside>
 	{/if}
