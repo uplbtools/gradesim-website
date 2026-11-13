@@ -7,8 +7,8 @@ import { getPlannerCourses, isNonGwaCourseCode, UPLB_PROGRAMS } from './curricul
 import type { GradesData } from './grades.ts';
 import { compute, DEFAULT_PLANNER_OPTIONS, modelFor } from './planner.ts';
 import { amisCourses, gradeResult, gwaOutlook, plannerCourseList, remainingRequirements } from './requirements.ts';
-import { surplusElectives } from './requirements.ts';
 import { enrichCourses, scheduleEarliest, semAt } from './scheduler.ts';
+import { surplusElectives } from './requirements.ts';
 
 test('grade results', () => {
 	expect(gradeResult('1.00')).toBe('passed');
