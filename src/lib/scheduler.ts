@@ -40,7 +40,7 @@ export interface ChecklistCourse {
 	gradeType?: string;
 	/** A specialization slot: only these courses fill it. */
 	options?: string[];
-	standing?: Standing;
+	standing?: Standing | null;
 }
 
 /** A course the scheduler can place. */
