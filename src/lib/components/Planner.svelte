@@ -22,6 +22,7 @@
 		summary,
 		termsLate,
 		termsText,
+		unitsText,
 		today,
 		whatIfMessage,
 		type Card,
@@ -295,7 +296,7 @@
 				<button type="button" class="pl-close" aria-label="Close details" onclick={() => select(code)}><Icon name="x" /></button>
 			</div>
 			<p class="pl-muted">
-				{`${c.units} units, offered ${offeringLabel(c).toLowerCase()}${off && !c.fixed ? ` (${off[1] ?? 0} of 4 first sems, ${off[2] ?? 0} of 3 second sems, ${off[3] ?? 0} of 2 midyears seen)` : ''}.${t !== undefined ? ` Planned for ${absLabel(view.startAbs + t)}.` : ''}`}
+				{`${unitsText(c.units)}, offered ${offeringLabel(c).toLowerCase()}${off && !c.fixed ? ` (${off[1] ?? 0} of 4 first sems, ${off[2] ?? 0} of 3 second sems, ${off[3] ?? 0} of 2 midyears seen)` : ''}.${t !== undefined ? ` Planned for ${absLabel(view.startAbs + t)}.` : ''}`}
 			</p>
 			{#if blocking || delay > 1 || slip !== undefined}
 				<ul class="pl-metrics">
