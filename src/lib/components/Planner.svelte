@@ -357,6 +357,12 @@
 				{#if app.s.plannerPins[code] != null}<button type="button" class="textbtn" onclick={() => act('unpin', code)}>Back to earliest</button>{/if}
 			</div>
 			{#if acted === code && sum}<p><strong>{sum.headline}.{sum.deltaText ? ` ${sum.deltaText}.` : ''}</strong></p>{/if}
+			{#if restricted(c) && i.status !== 'passed'}
+				<label class="pl-petition">
+					<input type="checkbox" checked={!!app.s.plannerPetitions[code]} onchange={(e) => togglePetition(code, e.currentTarget.checked)} />
+					<span>Plan on a petitioned class when it is not offered. It needs about 10 students and department, college and OVCAA approval, so treat it as conditional.</span>
+				</label>
+			{/if}
 			{#if fixing === code}
 				<FixForm course={c} onsave={saveFix} oncancel={() => (fixing = null)} />
 			{:else if fix}
@@ -367,12 +373,6 @@
 				</p>
 			{:else if !c.genericRequirement}
 				<p class="pl-muted">Is something wrong here? <button type="button" class="textbtn" onclick={() => (fixing = code)}>Fix this course</button></p>
-			{/if}
-			{#if restricted(c) && i.status !== 'passed'}
-				<label class="pl-petition">
-					<input type="checkbox" checked={!!app.s.plannerPetitions[code]} onchange={(e) => togglePetition(code, e.currentTarget.checked)} />
-					<span>Plan on a petitioned class when it is not offered. It needs about 10 students and department, college and OVCAA approval, so treat it as conditional.</span>
-				</label>
 			{/if}
 		</aside>
 	{/if}
@@ -413,7 +413,7 @@
 					{#each sum.costs as c (c.code)}
 						<li class:bad={c.cost > 0}>
 							<Icon name={c.cost > 0 ? 'x' : 'check'} size={16} />
-							<span><strong>{c.code}</strong> {c.source === 'whatif' ? '(what-if)' : c.past ? 'failed' : '(marked failed)'}, {c.cost > 0 ? `+${termsText(c.cost)}` : 'no delay'}</span>
+							<span><strong>{c.code}</strong> {c.source === 'whatif' ? 'in the what-if' : c.past ? 'failed' : 'marked failed'}, {c.cost > 0 ? `${termsText(c.cost)} later` : 'no delay'}</span>
 						</li>
 					{/each}
 					{#each view.conflicts as c (c.code + c.pre)}
