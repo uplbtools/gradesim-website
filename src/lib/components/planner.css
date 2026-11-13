@@ -14,6 +14,7 @@
   font-weight: 800;
   font-size: clamp(1.6rem, 3.2vw, 2.4rem);
   line-height: 1.15;
+  text-wrap: balance;
   color: var(--ink);
 }
 
