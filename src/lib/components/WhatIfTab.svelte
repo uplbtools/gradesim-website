@@ -5,7 +5,6 @@
 	import { HONORS } from '#lib/grades.ts';
 	import { modelFor, planTrack } from '#lib/planner.ts';
 	import { amisCourses, gwaOutlook, remainingRequirements } from '#lib/requirements.ts';
-	import Icon from './Icon.svelte';
 	import Notice from './Notice.svelte';
 
 	// Counts come from requirements.ts, the same code the planner uses, so both show the same units left.
@@ -164,7 +163,7 @@
 					<div><dt>Free elective units done</dt><dd>{left.electives.doneUnits} of {left.electives.totalUnits}</dd></div>
 				{/if}
 			</dl>
-			<a class="btn btn-secondary" href="#planner"><Icon name="planned" />See them in the planner</a>
+			<a class="btn btn-secondary" href="#planner">See them in the planner</a>
 
 			{#if tracks.length}
 				<details class="track">
