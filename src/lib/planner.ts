@@ -3,7 +3,7 @@
 
 import { UPLB_CATALOG } from './catalog.ts';
 import { detectTrack, resolveSpecialization, resolveTrack, UPLB_PROGRAMS, type Program } from './curriculum.ts';
-import { ayOfAbs, termKeyToAbs, type GradesData } from './grades.ts';
+import { ayOfAbs, gradeText, termKeyToAbs, type GradesData } from './grades.ts';
 import {
 	amisCourses,
 	fillRequirementSlots,
@@ -131,6 +131,7 @@ export interface Attempt {
 	result: Result;
 	abs: number;
 	order: number;
+	grade: string;
 	via?: string;
 }
 
@@ -150,6 +151,7 @@ export function readHistory(model: Model, input: PlannerInput, now = new Date())
 				title: (v.course && v.course.title) || '',
 				units: parseFloat(String(v.unit_taken)) || 0,
 				result: gradeResult(v.grade),
+				grade: gradeText(v.grade),
 				abs,
 				order: i
 			});
@@ -410,6 +412,7 @@ export interface Card {
 	code: string;
 	status: CardStatus;
 	via?: string;
+	grade?: string;
 	history?: boolean;
 	credited?: boolean;
 	hypothetical?: boolean;
@@ -451,7 +454,7 @@ export function buildColumns(v: View): { list: Column[]; primary: Record<string,
 			if (!st) return;
 			if (isLast && i.override) st = i.override === 'planned' ? null : i.override;
 			if (!st) return;
-			const card: Card = { code: c.code, status: st, via: a.via, history: !isLast };
+			const card: Card = { code: c.code, status: st, via: a.via, grade: a.grade, history: !isLast };
 			col(a.abs).cards.push(card);
 			if (isLast && st !== 'failed') primary[c.code] = card;
 		});
