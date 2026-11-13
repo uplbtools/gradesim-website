@@ -28,14 +28,16 @@
 		type PlannerInput,
 		type WhatIfMode
 	} from '#lib/planner.ts';
+	import { fixIssue, fixText, type ChecklistFix } from '#lib/fix.ts';
 	import { preGroups } from '#lib/scheduler.ts';
 	import { buildPlannerSheets, writeXlsx } from '#lib/xlsx.ts';
+	import FixForm from './FixForm.svelte';
 	import Icon, { type IconName } from './Icon.svelte';
 	import Notice from './Notice.svelte';
 	import StatusLabel from './StatusLabel.svelte';
 	import './planner.css';
 
-	const model = $derived(modelFor(app.s.selectedProgram, planTrack(app.program, app.s.gradesData, app.s.track), app.specialization));
+	const model = $derived(modelFor(app.s.selectedProgram, planTrack(app.program, app.s.gradesData, app.s.track), app.specialization, app.fixes));
 	const quality = $derived(getProgramDataQuality(app.s.selectedProgram));
 	const options = $derived(app.s.plannerOptions ?? DEFAULT_PLANNER_OPTIONS);
 	const input = $derived<PlannerInput>({
@@ -66,6 +68,35 @@
 	let menu: HTMLDetailsElement | undefined = $state();
 	let planInput: HTMLInputElement | undefined = $state();
 	let sheetEl: HTMLDivElement | undefined = $state();
+	// The course whose fix form is open, or 'add' for a missing course.
+	let fixing = $state<string | null>(null);
+
+	function saveFix(fix: ChecklistFix) {
+		app.setFix(fix);
+		fixing = null;
+		if (fix.kind === 'remove') selected = null;
+		status = `${fix.code} ${fixText(fix)}. Your plan now uses this.`;
+	}
+
+	async function sendFixes() {
+		const program = app.program.code;
+		const fixes = app.fixes.filter((f) => !f.sent);
+		let ok = false;
+		try {
+			const res = await fetch('/api/fix', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ program, fixes }) });
+			ok = res.ok;
+		} catch {
+			/* offline or no function: fall back to GitHub */
+		}
+		if (ok) {
+			app.setFixes(app.fixes.map((f) => ({ ...f, sent: true })));
+			notice = { text: 'Sent. A maintainer will review your fixes. Thank you.', bad: false };
+		} else {
+			const issue = fixIssue(program, fixes);
+			window.open(`https://github.com/uplbtools/gradesim/issues/new?${new URLSearchParams(issue)}`, '_blank', 'noopener');
+			notice = { text: 'GitHub opened in a new tab with your fixes filled in. Submit the issue there to send them.', bad: false };
+		}
+	}
 
 	const chain = $derived.by(() => {
 		if (!selected || !model) return null;
@@ -262,7 +293,7 @@
 				<button type="button" class="pl-close" aria-label="Close details" onclick={() => select(code)}><Icon name="x" /></button>
 			</div>
 			<p class="pl-muted">
-				{`${c.units} units, offered ${offeringLabel(c).toLowerCase()}${off ? ` (${off[1] ?? 0} of 4 first sems, ${off[2] ?? 0} of 3 second sems, ${off[3] ?? 0} of 2 midyears seen)` : ''}.${t !== undefined ? ` Planned for ${absLabel(view.startAbs + t)}.` : ''}`}
+				{`${c.units} units, offered ${offeringLabel(c).toLowerCase()}${off && !c.fixed ? ` (${off[1] ?? 0} of 4 first sems, ${off[2] ?? 0} of 3 second sems, ${off[3] ?? 0} of 2 midyears seen)` : ''}.${t !== undefined ? ` Planned for ${absLabel(view.startAbs + t)}.` : ''}`}
 			</p>
 			{#if card?.waitingOn}<p class="pl-note"><Icon name="lock" size={14} />Waiting on {card.waitingOn}</p>{/if}
 			<ul class="pl-metrics">
@@ -313,6 +344,11 @@
 				{#if t !== undefined}<button type="button" class="textbtn" onclick={() => act('later', code)}>Take a term later</button>{/if}
 				{#if app.s.plannerPins[code] != null}<button type="button" class="textbtn" onclick={() => act('unpin', code)}>Back to earliest</button>{/if}
 			</div>
+			{#if fixing === code}
+				<FixForm course={c} onsave={saveFix} oncancel={() => (fixing = null)} />
+			{:else if !c.genericRequirement}
+				<p class="pl-muted">Is something wrong here? <button type="button" class="textbtn" onclick={() => (fixing = code)}>Fix this course</button></p>
+			{/if}
 			{#if restricted(c) && i.status !== 'passed'}
 				<label class="pl-petition">
 					<input type="checkbox" checked={!!app.s.plannerPetitions[code]} onchange={(e) => togglePetition(code, e.currentTarget.checked)} />
@@ -439,6 +475,26 @@
 		</section>
 
 		<p class="pl-result" aria-live="polite">{wiResult}</p>
+
+		<section class="pl-fixes" aria-label="Your fixes to this checklist">
+			{#if app.fixes.length}
+				<h3>Your fixes to this checklist</h3>
+				<ul>
+					{#each app.fixes as f (f.code)}
+						<li>
+							<span><strong>{f.code}</strong> {fixText(f)}{f.sent ? ' (sent)' : ''}</span>
+							<button type="button" class="textbtn" onclick={() => app.setFixes(app.fixes.filter((x) => x !== f))}>Undo</button>
+						</li>
+					{/each}
+				</ul>
+				<p class="pl-muted">Your plan already uses these. Sending them lets UPLB Tools fix the checklist for everyone. Only the fixes are sent, never your grades.</p>
+			{/if}
+			<div class="pl-actions">
+				{#if app.fixes.some((f) => !f.sent)}<button type="button" class="btn btn-secondary" onclick={sendFixes}><Icon name="upload" />Send to UPLB Tools</button>{/if}
+				{#if fixing !== 'add'}<button type="button" class="textbtn" onclick={() => (fixing = 'add')}>Add a course the checklist is missing</button>{/if}
+			</div>
+			{#if fixing === 'add'}<FixForm onsave={saveFix} oncancel={() => (fixing = null)} />{/if}
+		</section>
 
 		<div class="pl-sheet" data-testid="planner-sheet" bind:this={sheetEl}>
 			{#each years as year (year.label)}

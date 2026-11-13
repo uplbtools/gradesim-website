@@ -1,6 +1,7 @@
 // Course planner logic, ported from the extension (extension/src/planner.js).
 // Everything here is pure: Planner.svelte renders what these return.
 
+import type { ChecklistFix } from './fix.ts';
 import { UPLB_CATALOG } from './catalog.ts';
 import { detectTrack, resolveSpecialization, resolveTrack, UPLB_PROGRAMS, type Program } from './curriculum.ts';
 import { ayOfAbs, gradeText, termKeyToAbs, type GradesData } from './grades.ts';
@@ -99,14 +100,35 @@ export function planTrack(program: Program, gradesData: GradesData | null | unde
 const models = new Map<string, Model>();
 
 /** The program's courses for a track and specialization merged with the catalog, plus its prerequisite graph. Cached per program, track and specialization. */
-export function modelFor(code: string, chosenTrack: string | null = null, chosenSpecialization: string | null = null): Model | null {
+/** A course list with the student's own checklist fixes applied. */
+export function applyFixes(courses: PlanCourse[], fixes: ChecklistFix[]): PlanCourse[] {
+	let out = courses;
+	for (const f of fixes) {
+		const patch: Partial<PlanCourse> = { fixed: true };
+		if (f.title) patch.title = f.title;
+		if (f.units) patch.units = f.units;
+		if (f.prereqs) Object.assign(patch, { pre: f.prereqs.map((p) => [p]), co: [], standing: null, coi: false, note: null });
+		if (f.sems) Object.assign(patch, { offered: { 1: +f.sems.includes('1'), 2: +f.sems.includes('2'), 3: +f.sems.includes('midyear') }, catalogSem: null });
+		if (f.kind === 'remove') out = out.filter((c) => c.code !== f.code);
+		else if (f.kind === 'edit') out = out.map((c) => (c.code === f.code ? { ...c, ...patch } : c));
+		else if (!out.some((c) => c.code === f.code)) out = [...out, { code: f.code, title: f.title!, units: f.units!, ...patch }];
+	}
+	return out;
+}
+
+export function modelFor(
+	code: string,
+	chosenTrack: string | null = null,
+	chosenSpecialization: string | null = null,
+	fixes: ChecklistFix[] = []
+): Model | null {
 	const program = UPLB_PROGRAMS[code];
 	if (!program || !program.majorCourses) return null;
 	const track = resolveTrack(program, chosenTrack);
 	const specialization = resolveSpecialization(program, chosenSpecialization);
-	const key = `${code}:${track}:${specialization}`;
+	const key = `${code}:${track}:${specialization}:${JSON.stringify(fixes)}`;
 	if (!models.has(key)) {
-		const courses = plannerCourseList(program, track, UPLB_CATALOG, specialization);
+		const courses = applyFixes(plannerCourseList(program, track, UPLB_CATALOG, specialization), fixes);
 		models.set(key, {
 			code,
 			program,

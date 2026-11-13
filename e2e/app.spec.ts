@@ -80,6 +80,20 @@ test('planner renders and a failed course shows a retake', async ({ page }) => {
 	await expect(page).toHaveURL(/#planner$/);
 });
 
+test('a checklist fix changes the plan and is listed for sending', async ({ page }) => {
+	await importFixture(page);
+	await page.getByRole('tab', { name: 'Planner' }).click();
+	const sheet = page.getByTestId('planner-sheet');
+	await sheet.locator('.pl-row[data-code="CMSC 123"]').click();
+	await page.getByRole('button', { name: 'Fix this course' }).click();
+	await page.getByRole('spinbutton', { name: 'Units' }).fill('5');
+	await page.getByRole('button', { name: 'Save fix' }).click();
+	await expect(page.getByRole('region', { name: 'Your fixes to this checklist' })).toContainText('CMSC 123 has 5 units');
+	await expect(sheet.locator('.pl-row[data-code="CMSC 123"] .pl-row-units')).toHaveText('5');
+	await page.getByRole('button', { name: 'Undo' }).click();
+	await expect(sheet.locator('.pl-row[data-code="CMSC 123"] .pl-row-units')).toHaveText('3');
+});
+
 test('What if and the planner count the same units left', async ({ page }) => {
 	await importFixture(page);
 	await page.getByRole('tab', { name: 'What if' }).click();

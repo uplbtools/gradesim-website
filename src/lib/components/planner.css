@@ -239,6 +239,66 @@
   font-weight: 500;
 }
 
+/* Checklist fixes */
+.pl-fixes {
+  margin-bottom: 20px;
+  font-size: 0.86rem;
+}
+
+.pl-fixes h3 {
+  margin: 0 0 4px;
+  font-size: 0.9rem;
+  color: var(--ink);
+}
+
+.pl-fixes ul {
+  margin: 0 0 6px;
+  padding: 0;
+  list-style: none;
+}
+
+.pl-fixes li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 12px;
+}
+
+.pl-fixes .pl-actions {
+  margin-top: 8px;
+}
+
+.pl-fix {
+  display: grid;
+  gap: 10px;
+  max-width: 460px;
+  margin-top: 12px;
+}
+
+.pl-fix fieldset {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.pl-fix legend {
+  padding: 0;
+  font-weight: 600;
+}
+
+.pl-fix small {
+  font-weight: 400;
+  color: var(--muted);
+}
+
+.pl-fix-error {
+  color: var(--bad);
+  font-weight: 600;
+}
+
 /* Sheet: academic years, each term a table of one-line rows. Status is an icon plus a word, never color alone. */
 .pl-sheet {
   display: flex;
