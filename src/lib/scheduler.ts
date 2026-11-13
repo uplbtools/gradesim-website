@@ -388,7 +388,7 @@ const CLEAN_CODE_RE = /^[A-Z]{2,6} \d{1,3}(\.\d{1,2})?[A-Z]?( \(\d\))?$/;
  * requisites. Catalog requisites and units win over the checklist when present,
  * since PDF parsing garbled some checklist units (CHEM 18 at 51).
  */
-// ponytail: SP and thesis courses (190, 200, 200A) keep checklist units. AMIS
+// SP and thesis courses (190, 200, 200A) keep checklist units. AMIS
 // lists them as variable 1-unit enrollments, so the catalog number undercounts.
 const VARIABLE_UNIT_RE = / (190|200)[A-Z]?$/;
 function unitsFor(course: ChecklistCourse, c: CatalogEntry | null): number {
