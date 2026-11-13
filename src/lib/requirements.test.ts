@@ -144,6 +144,9 @@ test('BSCS special problem twice, midyear practicum and senior year electives', 
 	const sp = plannerCourseList(BSCS, 'sp', UPLB_CATALOG);
 	const gwaUnits = sp.filter((c) => !isNonGwaCourseCode(c.code)).reduce((s, c) => s + c.units, 0);
 	expect(gwaUnits).toBe(BSCS.totalUnitsRequired);
+	const thesis = plannerCourseList(BSCS, 'thesis', UPLB_CATALOG);
+	expect(thesis.filter((c) => /^CMSC 200/.test(c.code)).map((c) => c.units)).toEqual([3, 3]);
+	expect(thesis.filter((c) => !isNonGwaCourseCode(c.code)).reduce((s, c) => s + c.units, 0)).toBe(130);
 
 	const fresh = scheduleEarliest({ courses: sp, passed: new Set(), useMidyear: false, totalUnits: 130 });
 	expect(fresh.plan.find((t) => t.courses.includes('CMSC 198'))!.sem).toBe('midyear');
