@@ -55,6 +55,7 @@
 		const program = url.searchParams.get('program');
 		if (program && UPLB_PROGRAMS[program]?.available) {
 			app.s.selectedProgram = program;
+			app.blank = true;
 			url.searchParams.delete('program');
 			history.replaceState(history.state, '', url.pathname + url.search + url.hash);
 		}
@@ -130,9 +131,17 @@
 	</div>
 {/if}
 
-{#if !app.ready || !app.hasData}
+{#if !app.ready || (!app.hasData && !app.blank)}
 	<div class:welcome-pending={!app.ready}>
 		<Welcome {extension} {manual} onExtension={fromExtension} onFile={fromFile} onManual={() => (manual = true)} />
+	</div>
+{:else if !app.hasData}
+	<div class="dash wide">
+		<p class="blank">
+			This is the {app.program.name} checklist planned from a blank transcript.
+			<button class="textbtn" type="button" onclick={() => (app.blank = false)}>Add your grades</button> to plan from where you are.
+		</p>
+		<Planner />
 	</div>
 {:else}
 	<div class="dash">
@@ -224,6 +233,17 @@
 		.tabs button {
 			padding: 8px 10px;
 		}
+	}
+
+	.blank {
+		margin: 20px 0 16px;
+		color: var(--muted);
+	}
+
+	.blank .textbtn {
+		display: inline;
+		min-height: 0;
+		padding: 0;
 	}
 
 	.wide {

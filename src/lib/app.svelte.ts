@@ -67,6 +67,8 @@ class AppState {
 	ready = $state(false);
 	/** Planner what-if, not saved (a plan file can carry one). */
 	whatif = $state<PlannerInput['whatif']>(null);
+	/** Planning a program with no grades, from a ?program= link. Not saved. */
+	blank = $state(false);
 
 	courses = $derived(parseAMISData(this.s.gradesData));
 	excluded = $derived(new Set(this.s.excludedCourses));
