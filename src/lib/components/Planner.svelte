@@ -297,17 +297,19 @@
 			<p class="pl-muted">
 				{`${c.units} units, offered ${offeringLabel(c).toLowerCase()}${off && !c.fixed ? ` (${off[1] ?? 0} of 4 first sems, ${off[2] ?? 0} of 3 second sems, ${off[3] ?? 0} of 2 midyears seen)` : ''}.${t !== undefined ? ` Planned for ${absLabel(view.startAbs + t)}.` : ''}`}
 			</p>
-			<ul class="pl-metrics">
-				{#if blocking}<li><strong>{blocking}</strong> {blocking === 1 ? 'course' : 'courses'} blocked if this is failed</li>{/if}
-				<li><strong>{delay}</strong> {delay === 1 ? 'course' : 'courses'} on the longest chain through it</li>
-				{#if slip !== undefined}
-					{#if slip > 0}
-						<li class="bad"><strong>Critical.</strong> Taking it a term later delays graduation by {slip === Infinity ? 'more than the plan can show' : termsText(termsLate(view, view.now.result.gradTermIndex, view.now.result.gradTermIndex + slip))}.</li>
-					{:else}
-						<li>Has slack. Taking it a term later does not move graduation.</li>
+			{#if blocking || delay > 1 || slip !== undefined}
+				<ul class="pl-metrics">
+					{#if blocking}<li><strong>{blocking}</strong> {blocking === 1 ? 'course' : 'courses'} blocked if this is failed</li>{/if}
+					{#if delay > 1}<li><strong>{delay}</strong> courses on the longest chain through it</li>{/if}
+					{#if slip !== undefined}
+						{#if slip > 0}
+							<li class="bad"><strong>Critical.</strong> Taking it a term later delays graduation by {slip === Infinity ? 'more than the plan can show' : termsText(termsLate(view, view.now.result.gradTermIndex, view.now.result.gradTermIndex + slip))}.</li>
+						{:else}
+							<li>Has slack. Taking it a term later does not move graduation.</li>
+						{/if}
 					{/if}
-				{/if}
-			</ul>
+				</ul>
+			{/if}
 			{#if c.options}
 				<h4>Take one of these</h4>
 				<ul class="pl-reqs">
