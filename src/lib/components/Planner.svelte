@@ -248,6 +248,13 @@
 		notice = { text: `Loaded the plan saved ${Number.isNaN(saved.getTime()) ? 'earlier' : saved.toLocaleDateString('en-CA')}.`, bad: false };
 	}
 
+	function printPlan() {
+		closeMenu();
+		selected = null;
+		sheetEl?.querySelectorAll('details').forEach((d) => (d.open = true));
+		window.print();
+	}
+
 	function exportXlsx() {
 		closeMenu();
 		if (!view || !layout) return;
@@ -459,6 +466,7 @@
 					<button type="button" class="pl-menu-item" onclick={savePlan}>Save plan<small>Download your marks, moves and options as a file</small></button>
 					<button type="button" class="pl-menu-item" onclick={() => planInput?.click()}>Load plan<small>Restore a plan file you saved earlier</small></button>
 					<button type="button" class="pl-menu-item" onclick={exportXlsx}>Export to Excel<small>A color-coded sheet with one column per term</small></button>
+					<button type="button" class="pl-menu-item" onclick={printPlan}>Print<small>Every term on paper, like the official checklist</small></button>
 					<button type="button" class="pl-menu-item pl-danger" onclick={resetPlan}>Reset plan<small>Clears marks, moves and petitions</small></button>
 				</div>
 			</details>

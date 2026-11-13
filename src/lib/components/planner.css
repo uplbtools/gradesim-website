@@ -689,7 +689,7 @@ button.pl-link:hover {
 }
 
 /* Phone: the title and the note drop under the code. */
-@media (max-width: 719px) {
+@media screen and (max-width: 719px) {
   .pl-whatif .select {
     flex: 1 1 40%;
     min-width: 0;
@@ -794,4 +794,50 @@ button.pl-link:hover {
 .pl-metrics,
 .pl-reqs {
   padding-left: 0;
+}
+
+@media print {
+  .site-header,
+  .site-footer,
+  .summary,
+  .tabs,
+  .notice,
+  .pl-controls,
+  .pl-result,
+  .pl-fixes,
+  .pl-detail,
+  .pl-term > summary > .icon {
+    display: none !important;
+  }
+
+  .pl-sheet {
+    max-width: none;
+  }
+
+  .pl-year h3 {
+    break-after: avoid;
+  }
+
+  .pl-term {
+    break-inside: avoid;
+  }
+
+  .pl-term > summary {
+    min-height: 28px;
+  }
+
+  .pl-rows {
+    column-gap: 8px;
+    padding-bottom: 4px;
+  }
+
+  .pl-row {
+    min-height: 0;
+    padding: 2px 4px;
+    font-size: 0.72rem;
+  }
+
+  .pl-row.dim {
+    opacity: 1;
+  }
 }
