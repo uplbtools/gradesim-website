@@ -72,12 +72,26 @@ test('planner renders and a failed course shows a retake', async ({ page }) => {
 	await importFixture(page);
 	await page.getByRole('tab', { name: 'Planner' }).click();
 	await expect(page.getByTestId('grad-term')).toContainText('Graduate');
-	const grid = page.getByTestId('planner-grid');
-	await expect(grid.locator('.pl-card.st-retake[data-code="MATH 27"]')).toBeVisible();
-	await expect(grid.locator('.pl-card.st-failed[data-code="MATH 27"]')).toBeVisible();
-	await grid.locator('.pl-card.st-retake[data-code="MATH 27"]').click();
+	const sheet = page.getByTestId('planner-sheet');
+	await expect(sheet.locator('.pl-row.st-retake[data-code="MATH 27"]')).toBeVisible();
+	await expect(sheet.locator('.pl-row.st-failed[data-code="MATH 27"]')).toBeVisible();
+	await sheet.locator('.pl-row.st-retake[data-code="MATH 27"]').click();
 	await expect(page.getByRole('complementary', { name: 'Details for MATH 27' })).toContainText('Analytic Geometry');
 	await expect(page).toHaveURL(/#planner$/);
+});
+
+test('a checklist fix changes the plan and is listed for sending', async ({ page }) => {
+	await importFixture(page);
+	await page.getByRole('tab', { name: 'Planner' }).click();
+	const sheet = page.getByTestId('planner-sheet');
+	await sheet.locator('.pl-row[data-code="CMSC 123"]').click();
+	await page.getByRole('button', { name: 'Fix this course' }).click();
+	await page.getByRole('spinbutton', { name: 'Units' }).fill('5');
+	await page.getByRole('button', { name: 'Save fix' }).click();
+	await expect(page.getByRole('region', { name: 'Your fixes to this checklist' })).toContainText('CMSC 123 has 5 units');
+	await expect(sheet.locator('.pl-row[data-code="CMSC 123"] .pl-row-units')).toHaveText('5');
+	await page.getByRole('button', { name: 'Undo' }).click();
+	await expect(sheet.locator('.pl-row[data-code="CMSC 123"] .pl-row-units')).toHaveText('3');
 });
 
 test('What if and the planner count the same units left', async ({ page }) => {
@@ -110,6 +124,15 @@ test('theme toggle cycles and persists', async ({ page }) => {
 	await expect(html).not.toHaveAttribute('data-theme');
 });
 
+test('curricula deep link opens the planner without grades', async ({ page }) => {
+	await open(page, '/?program=BSCS#planner');
+	await expect(page.getByTestId('planner-sheet')).toBeVisible();
+	await page.getByRole('combobox', { name: 'Your degree program' }).selectOption('BSBIO');
+	await expect(page.getByText('BS Biology checklist')).toBeVisible();
+	await page.getByRole('button', { name: 'Add your grades' }).click();
+	await expect(page.getByRole('link', { name: 'Install the extension' }).first()).toBeVisible();
+});
+
 test('curricula deep link picks the program in the planner', async ({ page }) => {
 	await importFixture(page);
 	await open(page, '/?program=BSBIO#planner');
@@ -132,12 +155,12 @@ test('@phone mobile layout stacks the planner terms', async ({ page }) => {
 	const noSideScroll = () => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth);
 	expect(await noSideScroll()).toBe(true);
 	await page.getByRole('tab', { name: 'Planner' }).click();
-	const grid = page.getByTestId('planner-grid');
-	await expect(grid).toHaveCSS('flex-direction', 'column');
+	const sheet = page.getByTestId('planner-sheet');
+	await expect(sheet).toHaveCSS('flex-direction', 'column');
 	expect(await noSideScroll()).toBe(true);
-	await grid.locator('.pl-card.st-retake[data-code="MATH 27"]').click();
+	await sheet.locator('.pl-row.st-retake[data-code="MATH 27"]').click();
 	// On phones the details open inline, inside the term list.
-	await expect(grid.getByRole('complementary', { name: 'Details for MATH 27' })).toBeVisible();
+	await expect(sheet.getByRole('complementary', { name: 'Details for MATH 27' })).toBeVisible();
 });
 
 test('imports from the extension through the window bridge', async ({ page }) => {

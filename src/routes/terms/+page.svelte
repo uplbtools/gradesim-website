@@ -10,7 +10,7 @@
 />
 
 <div class="wrap">
-	<PageHead title="Terms of use">Last updated October 6, 2026</PageHead>
+	<PageHead title="Terms of use">Last updated November 13, 2026</PageHead>
 
 	<article class="prose">
 		<h2>Agreement</h2>
@@ -35,6 +35,7 @@
 			Your grades are saved in your browser and you are responsible for them. Clearing your browser data or using Clear my data
 			removes them, and we cannot recover them for you. Export a backup if you want a copy.
 		</p>
+		<p>A checklist fix that you send to UPLB Tools becomes a public issue on GitHub, so do not put personal details in its note.</p>
 
 		<h2>Acceptable use</h2>
 		<ul>

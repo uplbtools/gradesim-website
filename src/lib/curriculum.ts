@@ -4,7 +4,7 @@
 
 import { UPLB_CATALOG } from './catalog.ts';
 import programsJson from './data/programs.json';
-import type { CatalogEntry, ChecklistCourse } from './scheduler.ts';
+import type { CatalogEntry, ChecklistCourse, Standing } from './scheduler.ts';
 
 export interface Track {
 	name: string;
@@ -40,6 +40,7 @@ export interface Program {
 	nstpCoursesRequired?: number;
 	tracks?: Record<string, Track> | null;
 	defaultTrack?: string;
+	freeElectiveStanding?: Standing;
 	specializations?: Record<string, Specialization>;
 	majorCourses: ChecklistCourse[];
 	requiredCodes?: string[];
@@ -172,7 +173,7 @@ export function genericRequirementCourses(program: Partial<Slim> | null | undefi
 	return courses;
 }
 
-type WithTracks = Partial<Slim> & Pick<Program, 'tracks' | 'defaultTrack'>;
+type WithTracks = Partial<Slim> & Pick<Program, 'tracks' | 'defaultTrack' | 'freeElectiveStanding'>;
 
 /** A known track key, else the program's default, else its first track. */
 export function resolveTrack(program: WithTracks | null | undefined, track?: string | null): string | null {
@@ -210,6 +211,7 @@ export function freeElectiveCourses(program: WithTracks | null | undefined, trac
 			units: Math.min(3, left),
 			...defaultSlot(4 + (i % 4)),
 			prereqs: [],
+			standing: program.freeElectiveStanding,
 			genericRequirement: 'elective'
 		});
 	}

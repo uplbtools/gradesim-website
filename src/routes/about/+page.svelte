@@ -27,7 +27,7 @@
 		},
 		{
 			q: 'My program is missing or a course looks wrong.',
-			a: 'Curriculum data comes from the official checklists and is checked by volunteers. Open an issue on GitHub with the course and what the checklist says, and we will fix it.'
+			a: 'Curriculum data comes from the official checklists and is checked by volunteers. In the planner, select the course and choose Fix this course. Your plan uses the fix right away, and you can send it to UPLB Tools so the checklist is fixed for everyone. For a missing program, open an issue on GitHub.'
 		},
 		{
 			q: 'Can I use it on my phone?',
@@ -51,7 +51,7 @@
 	<figure class="shot">
 		<ThemedShot
 			name="planner"
-			alt="The planner showing past terms with passed courses, a failed course with its retake, and the remaining terms up to graduation"
+			alt="The planner showing the graduation term, the what-if controls and a first year with a failed MATH 27"
 			width={1440}
 			height={900}
 		/>

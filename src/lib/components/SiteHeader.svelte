@@ -31,7 +31,7 @@
 			<span class="by">by UPLB Tools</span>
 		</a>
 
-		{#if onApp && app.ready && app.hasData}
+		{#if onApp && app.ready && (app.hasData || app.blank)}
 			<label class="program">
 				<span class="visually-hidden">Your degree program</span>
 				<select class="select" bind:value={app.s.selectedProgram}>
