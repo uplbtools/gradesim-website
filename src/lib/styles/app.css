@@ -245,6 +245,11 @@ textarea {
 	font-weight: 400;
 }
 
+.input::placeholder {
+	color: var(--muted);
+	opacity: 1;
+}
+
 .check {
 	display: flex;
 	align-items: center;
@@ -253,6 +258,7 @@ textarea {
 }
 
 .check input {
+	flex: none;
 	width: 18px;
 	height: 18px;
 	accent-color: var(--brand);

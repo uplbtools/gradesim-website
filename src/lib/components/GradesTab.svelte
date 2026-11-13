@@ -125,9 +125,9 @@
 							{/if}
 							<span class="units">{c.units}u</span>
 							{#if !editing}
-								<span class="grade {tone}">
-									{#if tone === 'failed'}<Icon name="x" size={14} />{:else if tone === 'other'}<Icon name="alert" size={14} />{/if}
-									{formatGrade(c.grade)}
+								<span class="grade {c.grade ? tone : 'none'}">
+									{#if tone === 'failed'}<Icon name="x" size={14} />{:else if tone === 'other' && c.grade}<Icon name="alert" size={14} />{/if}
+									{c.grade ? formatGrade(c.grade) : 'No grade yet'}
 								</span>
 							{/if}
 						</div>
@@ -175,7 +175,7 @@
 		<h2 id="data-title" class="h">Your data</h2>
 		<p class="small">
 			{#if app.s.source}These grades came from {SOURCE[app.s.source]}.{/if}
-			Everything is saved in this browser only. Export a backup to move it to another device; the file also loads in the extension.
+			Everything is saved in this browser only. Export a backup to move it to another device. The file also loads in the extension.
 		</p>
 		<div class="actions">
 			{#if extension === 'found'}
@@ -351,6 +351,11 @@
 		color: var(--warn);
 	}
 
+	.grade.none {
+		font-weight: 500;
+		color: var(--muted);
+	}
+
 	.excl {
 		min-height: 32px;
 		padding: 2px 10px;
@@ -393,6 +398,10 @@
 		margin-top: 10px;
 	}
 
+	.subform + p {
+		margin-top: 10px;
+	}
+
 	.subs {
 		list-style: none;
 		padding: 0;
@@ -412,6 +421,57 @@
 		flex-wrap: wrap;
 		gap: 8px;
 		margin-top: 12px;
+	}
+
+	@media (max-width: 719px) {
+		.title {
+			display: -webkit-box;
+			-webkit-line-clamp: 2;
+			line-clamp: 2;
+			-webkit-box-orient: vertical;
+			white-space: normal;
+		}
+
+		.group li:has(.excl) {
+			display: grid;
+			grid-template: 'info units grade' 'info excl excl' / minmax(0, 1fr) auto auto;
+			gap: 4px 8px;
+		}
+
+		.group li:has(.excl) .right {
+			display: contents;
+		}
+
+		.info {
+			grid-area: info;
+		}
+
+		.units {
+			grid-area: units;
+			align-self: center;
+		}
+
+		.grade {
+			grid-area: grade;
+		}
+
+		.excl {
+			grid-area: excl;
+			justify-self: end;
+		}
+
+		.group li:has(.mini) {
+			flex-wrap: wrap;
+			row-gap: 6px;
+		}
+
+		.group li:has(.mini) .info {
+			flex: 1 1 100%;
+		}
+
+		.group li:has(.mini) .right {
+			margin-left: auto;
+		}
 	}
 
 	@media (min-width: 720px) {

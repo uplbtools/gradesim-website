@@ -5,7 +5,6 @@
 	import { HONORS } from '#lib/grades.ts';
 	import { modelFor, planTrack } from '#lib/planner.ts';
 	import { amisCourses, gwaOutlook, remainingRequirements } from '#lib/requirements.ts';
-	import Icon from './Icon.svelte';
 	import Notice from './Notice.svelte';
 
 	// Counts come from requirements.ts, the same code the planner uses, so both show the same units left.
@@ -164,11 +163,11 @@
 					<div><dt>Free elective units done</dt><dd>{left.electives.doneUnits} of {left.electives.totalUnits}</dd></div>
 				{/if}
 			</dl>
-			<a class="btn btn-secondary" href="#planner"><Icon name="planned" />See them in the planner</a>
+			<a class="btn btn-secondary" href="#planner">See them in the planner</a>
 
 			{#if tracks.length}
 				<details class="track">
-					<summary>Track</summary>
+					<summary>{app.program.tracks![(detected ?? track)!].name}{detected ? '' : ' (assumed)'}</summary>
 					{#if detected}
 						<Notice tone="ok">Your grades show the {app.program.tracks![detected].name} ({app.program.tracks![detected].code}).</Notice>
 					{:else}
@@ -226,7 +225,14 @@
 <style>
 	.whatif {
 		display: grid;
-		gap: 16px;
+		gap: 28px;
+	}
+
+	.whatif > .card {
+		padding: 0;
+		border: 0;
+		background: none;
+		box-shadow: none;
 	}
 
 	.h {
@@ -342,9 +348,9 @@
 
 	.track summary {
 		cursor: pointer;
+		padding: 8px 0;
 		font-weight: 650;
 		color: var(--ink);
-		margin-bottom: 8px;
 	}
 
 	.pool {
@@ -358,8 +364,42 @@
 		margin-top: 8px;
 	}
 
+	@media (max-width: 719px) {
+		.targets {
+			grid-template-columns: minmax(0, 1fr);
+		}
+
+		.tname {
+			font-size: 0.92rem;
+		}
+
+		.target {
+			flex-direction: row;
+			align-items: center;
+			justify-content: space-between;
+			gap: 8px;
+			min-height: 48px;
+			padding: 6px 12px;
+		}
+
+		.tname,
+		.tmax {
+			white-space: nowrap;
+		}
+
+		.tmax {
+			font-size: 0.75rem;
+		}
+
+		.custom {
+			width: 6.5em;
+			margin-top: 0;
+		}
+	}
+
 	@media (min-width: 900px) {
 		.whatif {
+			column-gap: 48px;
 			grid-template-columns: 1fr 1fr;
 			align-items: start;
 		}

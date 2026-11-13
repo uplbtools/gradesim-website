@@ -121,7 +121,13 @@
 />
 
 {#if message}
-	<div class="wrap flash">
+	<div
+		class="wrap flash"
+		{@attach (el) => {
+			void message; // reruns for each new message
+			el.scrollIntoView({ block: 'nearest' });
+		}}
+	>
 		<Notice tone={message.tone} live>
 			{message.text}
 			{#snippet action()}
@@ -146,6 +152,7 @@
 {:else}
 	<div class="dash">
 		<div class={tab === 'planner' ? 'wide' : 'wrap'}>
+			<h1 class="visually-hidden">Your dashboard</h1>
 			<Summary />
 			<div class="tabs" role="tablist" aria-label="GradeSim sections">
 				{#each TABS as t, i (t.id)}
@@ -185,6 +192,7 @@
 
 <style>
 	.flash {
+		scroll-margin-top: 76px;
 		margin-top: 12px;
 	}
 
@@ -231,7 +239,8 @@
 
 	@media (max-width: 479px) {
 		.tabs button {
-			padding: 8px 10px;
+			flex: 1 1 auto;
+			padding: 8px 4px;
 		}
 	}
 
