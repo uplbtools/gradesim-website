@@ -6,7 +6,8 @@ import { UPLB_CATALOG } from './catalog.ts';
 import { getPlannerCourses, isNonGwaCourseCode, UPLB_PROGRAMS } from './curriculum.ts';
 import type { GradesData } from './grades.ts';
 import { compute, DEFAULT_PLANNER_OPTIONS, modelFor } from './planner.ts';
-import { amisCourses, gradeResult, gwaOutlook, plannerCourseList, remainingRequirements, surplusElectives } from './requirements.ts';
+import { amisCourses, gradeResult, gwaOutlook, plannerCourseList, remainingRequirements } from './requirements.ts';
+import { surplusElectives } from './requirements.ts';
 import { enrichCourses, scheduleEarliest, semAt } from './scheduler.ts';
 
 test('grade results', () => {
@@ -91,6 +92,16 @@ test('no made up free electives, and planner marks count', () => {
 	expect(marked.units).toBe(left.units);
 });
 
+test('honors count only the required electives, the earliest first', () => {
+	const list = plannerCourseList(BSCS, 'sp', UPLB_CATALOG);
+	const feSlots = list.filter((c) => /^FE\b/.test(c.code)).length;
+	const extra = Array.from({ length: feSlots + 2 }, (_, i) => ({ code: `SOC ${100 + i}`, title: 'Elective', units: 3, grade: '1.00', result: 'passed', termId: String(1231 + i) }));
+	const named = { code: 'CMSC 12', title: 'Foundations of Computer Science', units: 3, grade: '1.00', result: 'passed', termId: '1231' };
+	expect(surplusElectives(list, [named, ...extra]).map((r) => r.code)).toEqual(extra.slice(-2).map((r) => r.code));
+	expect(surplusElectives(list, [named, ...extra.slice(0, feSlots)])).toEqual([]);
+	expect(surplusElectives(list.filter((c) => c.genericRequirement !== 'elective'), extra)).toEqual([]);
+});
+
 test('GWA outlook', () => {
 	const out = gwaOutlook(1.9, 60, 60, 1.2);
 	expect(out.status).toBe('out-of-reach');
@@ -173,14 +184,4 @@ test('BSCS special problem twice, midyear practicum and senior year electives', 
 	expect(view.info['CMSC 198'].status).toBe('passed');
 	expect(view.info['FE 1'].status).toBe('todo');
 	expect(view.conflicts).toEqual([{ code: 'CMSC 57', pre: 'CMSC 56' }]);
-});
-
-test('honors count only the required electives, the earliest first', () => {
-	const list = plannerCourseList(BSCS, 'sp', UPLB_CATALOG);
-	const feSlots = list.filter((c) => /^FE\b/.test(c.code)).length;
-	const extra = Array.from({ length: feSlots + 2 }, (_, i) => ({ code: `SOC ${100 + i}`, title: 'Elective', units: 3, grade: '1.00', result: 'passed', termId: String(1231 + i) }));
-	const named = { code: 'CMSC 12', title: 'Foundations of Computer Science', units: 3, grade: '1.00', result: 'passed', termId: '1231' };
-	expect(surplusElectives(list, [named, ...extra]).map((r) => r.code)).toEqual(extra.slice(-2).map((r) => r.code));
-	expect(surplusElectives(list, [named, ...extra.slice(0, feSlots)])).toEqual([]);
-	expect(surplusElectives(list.filter((c) => c.genericRequirement !== 'elective'), extra)).toEqual([]);
 });
