@@ -42,7 +42,7 @@ export function absLabel(abs: number): string {
 }
 export const ayLabel = ayOfAbs;
 
-// ponytail: month heuristic for the current term (Aug-Dec 1st, Jan-May 2nd,
+// Month heuristic for the current term (Aug-Dec 1st, Jan-May 2nd,
 // Jun-Jul midyear). Only used when grades are older than the calendar.
 export function calendarAbs(now = new Date()): number {
 	const y = now.getFullYear();
@@ -523,7 +523,6 @@ export function buildColumns(v: View): { list: Column[]; primary: Record<string,
 /**
  * Barycenter sweeps: order each column by the mean row of a card's
  * prerequisites (left to right), then of its dependents (right to left).
- * ponytail: plain barycenter, no crossing count; d3-dag if this looks bad.
  */
 function orderColumns(model: Model, list: Column[], primary: Record<string, Card>) {
 	const delay = model.graph.delay;

@@ -290,7 +290,7 @@
 		{@const i = view.info[code]}
 		{@const card = layout?.primary[code]}
 		{@const t = view.now.result.assignedTerm[code]}
-		{@const slip = view.slips[code]}
+		{@const slip = c.genericRequirement === 'elective' && view.slips[code] > 0 ? undefined : view.slips[code]}
 		{@const blocking = model.graph.blocking[code] || 0}
 		{@const delay = model.graph.delay[code] || 1}
 		{@const deps = model.graph.edges.filter((e) => e.from === code).map((e) => e.to)}

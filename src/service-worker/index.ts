@@ -7,7 +7,7 @@ import { assets, immutable, prerendered } from '$app/manifest';
 import { version } from '$app/env';
 
 const CACHE = `gradesim-${version}`;
-// ponytail: the checklist images (28 MB) stay network-only; cache them on view if offline checklists matter.
+// The checklist images (28 MB) stay network-only.
 const big = (p: string) => p.includes('curricula/') || p.includes('screenshots/');
 const PRECACHE = [
 	...immutable.map((f) => f.path),

@@ -1,8 +1,7 @@
 // Tiny .xlsx writer for the planner export, ported from the extension (extension/src/xlsx.js).
 // Writes SpreadsheetML parts into a store-only (uncompressed) ZIP, so there is
 // no library to bundle and nothing remote to load.
-// ponytail: no compression. A full plan is well under 200 KB uncompressed;
-// add deflate (CompressionStream) if files ever get big.
+// No compression. A full plan is well under 200 KB uncompressed.
 
 type Side = [style: string, color: string];
 export interface Style {
