@@ -83,7 +83,7 @@
 		const fixes = app.fixes.filter((f) => !f.sent);
 		let ok = false;
 		try {
-			const res = await fetch('/api/fix', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ program, fixes }) });
+			const res = await fetch('/api/fix/', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ program, fixes }) });
 			ok = res.ok;
 		} catch {
 			/* offline or no function: fall back to GitHub */
