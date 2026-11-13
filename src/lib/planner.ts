@@ -18,6 +18,7 @@ import {
 	normCode,
 	offeredIn,
 	preGroups,
+	prereqConflicts,
 	scheduleEarliest,
 	type Graph,
 	type PlanCourse,
@@ -179,14 +180,17 @@ export function readHistory(model: Model, input: PlannerInput, now = new Date())
 	const push = (code: string, a: Attempt) => {
 		(byCurr[code] = byCurr[code] || []).push(a);
 	};
+	// Once a course is passed, later attempts go to its "CODE (n)" row.
 	list.forEach((a) => {
-		if (model.byCode.has(a.code)) push(a.code, a);
+		let code = a.code;
+		for (let n = 2; (byCurr[code] || []).some((x) => x.result === 'passed') && model.byCode.has(`${a.code} (${n})`); n++) code = `${a.code} (${n})`;
+		if (model.byCode.has(code)) push(code, a);
 	});
 
 	// Slots filled the same way the What if tab counts them.
 	const doneOrNow = list.filter((a) => a.result === 'passed' || a.result === 'inprogress');
 	fillRequirementSlots(model.courses, doneOrNow, input.substitutions).forEach((a, slot) => {
-		if (a.code !== slot && model.byCode.has(slot)) push(slot, { ...a, via: a.code });
+		if (a.code !== slot && model.byCode.has(slot) && !(byCurr[slot] || []).includes(a)) push(slot, { ...a, via: a.code });
 	});
 
 	return { attempts: list, byCurr, latestAbs, passedOutside: new Set(doneOrNow.map((a) => a.code)) };
@@ -312,7 +316,9 @@ export function compute(model: Model, input: PlannerInput, now = new Date()) {
 		{ substitutions: input.substitutions, overrides: input.customCourseStatus }
 	);
 
-	const v = { model, input, hist, info, startAbs, passed: nowRun.passed, failures, costs, now: nowRun, ideal, noWhatif, slips, unitCaps, left };
+	const conflicts = prereqConflicts(model.courses, (code) => (info[code] ? info[code].status : passed.has(code) && 'passed'));
+
+	const v = { model, input, hist, info, startAbs, passed: nowRun.passed, failures, costs, now: nowRun, ideal, noWhatif, slips, unitCaps, left, conflicts };
 	v.costs.forEach((c) => {
 		c.cost = termsLate(v, c.costT[0], c.costT[1]);
 	});

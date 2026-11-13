@@ -68,8 +68,11 @@ export function fillRequirementSlots<R extends Row>(
 	const norm = (r: Row) => normalizeCourseCode(r.code);
 	const named = new Set(courses.filter((c) => !c.genericRequirement).map((c) => normalizeCourseCode(c.code)));
 	const fill = new Map<string, R>();
+	// A repeat enrollment fills the next "CODE (n)" row.
 	rows.forEach((r) => {
-		if (named.has(norm(r)) && !fill.has(norm(r))) fill.set(norm(r), r);
+		let code = norm(r);
+		for (let n = 2; fill.has(code) && named.has(`${norm(r)} (${n})`); n++) code = `${norm(r)} (${n})`;
+		if (named.has(code) && !fill.has(code)) fill.set(code, r);
 	});
 	const used = new Set<string>();
 	// The student's own substitutions come first and win.
