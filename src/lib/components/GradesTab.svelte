@@ -175,7 +175,7 @@
 		<h2 id="data-title" class="h">Your data</h2>
 		<p class="small">
 			{#if app.s.source}These grades came from {SOURCE[app.s.source]}.{/if}
-			Everything is saved in this browser only. Export a backup to move it to another device; the file also loads in the extension.
+			Everything is saved in this browser only. Export a backup to move it to another device. The file also loads in the extension.
 		</p>
 		<div class="actions">
 			{#if extension === 'found'}
@@ -395,6 +395,10 @@
 	.subform {
 		display: grid;
 		gap: 10px;
+		margin-top: 10px;
+	}
+
+	.subform + p {
 		margin-top: 10px;
 	}
 
