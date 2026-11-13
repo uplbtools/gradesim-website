@@ -826,7 +826,17 @@ button.pl-link:hover {
   padding-left: 0;
 }
 
+.pl-print-only {
+  display: none;
+}
+
 @media print {
+  .pl-print-only {
+    display: block;
+    font-weight: 700;
+    color: var(--ink);
+  }
+
   .site-header,
   .site-footer,
   .summary,
