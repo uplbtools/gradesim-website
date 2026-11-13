@@ -514,7 +514,7 @@
 								</span>
 								{#if f.warn}<span class="visually-hidden">{f.warn}</span>{/if}
 							</summary>
-							<ul class="pl-rows">
+							<ul class="pl-rows" class:nograde={!term.cards.some((c) => c.grade)}>
 								{#each term.cards as card (card)}
 									{@const c = model.byCode.get(card.code)!}
 									{@const facts = cardFacts(card, view)}
