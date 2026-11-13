@@ -396,10 +396,10 @@
 		{/if}
 
 		<section class="pl-summary" aria-live="polite">
-			<p class="pl-grad" data-testid="grad-term">
+			<h2 class="pl-grad" data-testid="grad-term">
 				<span>{sum.headline}</span>
 				{#if sum.deltaText}<span class="pl-delta" class:ok={sum.deltaOk}><Icon name={sum.deltaOk ? 'check' : 'alert'} />{sum.deltaText}</span>{/if}
-			</p>
+			</h2>
 			<p class="pl-sub">{sum.sub}</p>
 			{#if sum.costs.length || view.conflicts.length}
 				<ul class="pl-costs">
