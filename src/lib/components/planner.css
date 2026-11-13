@@ -1,10 +1,5 @@
 /* Course planner, ported from the extension (extension/src/planner.css). Classes are pl- prefixed, so this sheet is global. */
 
-
-
-
-
-
 /* Summary: the answer first. */
 .pl-summary {
   margin: 6px 0 14px;
@@ -92,7 +87,6 @@
   flex: 1 1 auto;
 }
 
-
 .pl-whatif .select,
 .pl-menu .select {
   min-height: 40px;
@@ -104,7 +98,6 @@
   font: inherit;
   width: auto;
 }
-
 
 .pl-menu {
   position: relative;
