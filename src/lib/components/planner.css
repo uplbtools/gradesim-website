@@ -695,21 +695,14 @@ button.pl-link:hover {
     min-width: 0;
   }
 
-  .pl-whatif .btn-primary {
-    flex: 1 1 100%;
-  }
-
   .pl-controls {
-    align-items: stretch;
+    position: relative;
+    column-gap: 8px;
   }
 
   .pl-menu {
-    width: 100%;
-  }
-
-  .pl-menu > summary {
-    width: 100%;
-    justify-content: center;
+    position: static;
+    margin-left: auto;
   }
 
   .pl-menu-pop {
@@ -719,8 +712,15 @@ button.pl-link:hover {
   }
 
   .pl-tips {
-    width: 100%;
     margin-left: 0;
+  }
+
+  .pl-tips[open] {
+    flex-basis: 100%;
+  }
+
+  .pl-tips > summary {
+    padding: 0;
   }
 
   .pl-tips-pop {
