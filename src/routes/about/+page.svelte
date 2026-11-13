@@ -51,7 +51,7 @@
 	<figure class="shot">
 		<ThemedShot
 			name="planner"
-			alt="The planner showing past terms with passed courses, a failed course with its retake, and the remaining terms up to graduation"
+			alt="The planner showing the graduation term, the what-if controls and a first year with a failed MATH 27"
 			width={1440}
 			height={900}
 		/>
