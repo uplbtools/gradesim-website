@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount, tick } from 'svelte';
 	import { app, download } from '#lib/app.svelte.ts';
+	import { groupGWA, termKeyToAbs } from '#lib/grades.ts';
 	import { parseImport } from '#lib/importers.ts';
 	import { UPLB_CATALOG } from '#lib/catalog.ts';
 	import { getProgramDataQuality, UPLB_PROGRAMS } from '#lib/curriculum.ts';
@@ -111,7 +112,7 @@
 	const years = $derived.by(() => {
 		if (!view || !layout || !model) return [];
 		const slot = (card: Card) => (model.byCode.get(card.code)!.genericRequirement ? 1 : 0);
-		const out: { label: string; terms: { column: Column; f: ReturnType<typeof columnFacts>; name: string; sem?: number; cards: Card[]; failed: number }[] }[] = [];
+		const out: { label: string; terms: { column: Column; f: ReturnType<typeof columnFacts>; name: string; sem?: number; gwa: number; cards: Card[]; failed: number }[] }[] = [];
 		layout.list.forEach((column) => {
 			const f = columnFacts(column, view);
 			const dated = Number.isFinite(column.abs) && column.abs >= 0;
@@ -122,6 +123,7 @@
 				f,
 				name: dated ? f.name : f.sub,
 				sem: dated ? column.abs % 3 : undefined,
+				gwa: f.isPast ? groupGWA(app.courses.filter((c) => termKeyToAbs(c.termKey) === column.abs), app.excluded).gwa : 0,
 				cards: [...column.cards].sort((a, b) => slot(a) - slot(b) || a.code.localeCompare(b.code, undefined, { numeric: true })),
 				failed: column.cards.filter((c) => c.status === 'failed' && !c.hypothetical).length
 			});
@@ -509,6 +511,7 @@
 								{#if f.tag === 'Next' || f.tag === 'Now'}<span class="pl-term-tag">{f.tag === 'Next' ? 'next' : 'now'}</span>{/if}
 								<span class="pl-term-facts">
 									{#if term.failed}<span class="bad">{term.failed} failed</span>{/if}
+									{#if term.gwa}<span>GWA {term.gwa.toFixed(4)}</span>{/if}
 									<span class:warn={f.loud} title={f.warn || undefined}>{#if f.loud}<Icon name="alert" size={13} />{/if}{f.units} units</span>
 								</span>
 								{#if f.warn}<span class="visually-hidden">{f.warn}</span>{/if}
