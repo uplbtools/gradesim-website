@@ -56,6 +56,7 @@
 					</button>
 				</div>
 				<p class="hint">A file can be a JSON backup from the extension or a plan you saved from this planner.</p>
+				<p class="hint">No grades yet? <a href={resolve('curricula/')}>See your program's checklist</a>.</p>
 			</div>
 
 			<p class="privacy"><Icon name="shield" />Your grades stay in this browser. There are no accounts and nothing is uploaded.</p>
