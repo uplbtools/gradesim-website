@@ -26,7 +26,6 @@
 	let extension = $state<'checking' | 'found' | 'empty' | 'missing'>('checking');
 	let message = $state<{ text: string; tone: 'ok' | 'bad' } | null>(null);
 	let manual = $state(false);
-	let blank = $state(false);
 
 	function readHash() {
 		const h = location.hash.slice(1);
@@ -56,7 +55,7 @@
 		const program = url.searchParams.get('program');
 		if (program && UPLB_PROGRAMS[program]?.available) {
 			app.s.selectedProgram = program;
-			blank = true;
+			app.blank = true;
 			url.searchParams.delete('program');
 			history.replaceState(history.state, '', url.pathname + url.search + url.hash);
 		}
@@ -132,7 +131,7 @@
 	</div>
 {/if}
 
-{#if !app.ready || (!app.hasData && !blank)}
+{#if !app.ready || (!app.hasData && !app.blank)}
 	<div class:welcome-pending={!app.ready}>
 		<Welcome {extension} {manual} onExtension={fromExtension} onFile={fromFile} onManual={() => (manual = true)} />
 	</div>
@@ -140,7 +139,7 @@
 	<div class="dash wide">
 		<p class="blank">
 			This is the {app.program.name} checklist planned from a blank transcript.
-			<button class="textbtn" type="button" onclick={() => (blank = false)}>Add your grades</button> to plan from where you are.
+			<button class="textbtn" type="button" onclick={() => (app.blank = false)}>Add your grades</button> to plan from where you are.
 		</p>
 		<Planner />
 	</div>

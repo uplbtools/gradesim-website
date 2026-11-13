@@ -127,6 +127,8 @@ test('theme toggle cycles and persists', async ({ page }) => {
 test('curricula deep link opens the planner without grades', async ({ page }) => {
 	await open(page, '/?program=BSCS#planner');
 	await expect(page.getByTestId('planner-sheet')).toBeVisible();
+	await page.getByRole('combobox', { name: 'Your degree program' }).selectOption('BSBIO');
+	await expect(page.getByText('BS Biology checklist')).toBeVisible();
 	await page.getByRole('button', { name: 'Add your grades' }).click();
 	await expect(page.getByRole('link', { name: 'Install the extension' }).first()).toBeVisible();
 });
