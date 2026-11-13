@@ -187,11 +187,18 @@
 	@media (min-width: 720px) {
 		.bar {
 			padding: 8px 24px;
+			flex-wrap: nowrap;
+		}
+
+		.brand,
+		.tools {
+			flex: none;
 		}
 
 		.program {
 			order: 0;
 			flex: 0 1 340px;
+			min-width: 0;
 		}
 	}
 </style>

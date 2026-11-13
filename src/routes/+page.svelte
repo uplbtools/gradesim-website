@@ -222,7 +222,8 @@
 
 	@media (max-width: 479px) {
 		.tabs button {
-			padding: 8px 10px;
+			flex: 1 1 auto;
+			padding: 8px 4px;
 		}
 	}
 
