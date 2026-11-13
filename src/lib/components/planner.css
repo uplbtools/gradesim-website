@@ -5,23 +5,6 @@
 
 
 
-.pl-banner {
-  display: flex;
-  gap: 8px;
-  align-items: flex-start;
-  padding: 10px 14px;
-  margin-bottom: 12px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  background: var(--bg-elevated);
-  color: var(--body);
-}
-
-.pl-banner .icon {
-  color: var(--info);
-  margin-top: 2px;
-}
-
 /* Summary: the answer first. */
 .pl-summary {
   margin: 6px 0 14px;
