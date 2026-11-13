@@ -288,6 +288,7 @@
 		{@const delay = model.graph.delay[code] || 1}
 		{@const deps = model.graph.edges.filter((e) => e.from === code).map((e) => e.to)}
 		{@const past = i.tries.length > 0}
+		{@const fix = app.fixes.find((f) => f.code === code)}
 		{@const off = c.offered as Record<number, number> | null | undefined}
 		<aside class="pl-detail" aria-label="Details for {code}">
 			<div class="pl-detail-head">
@@ -351,6 +352,12 @@
 			{#if acted === code && sum}<p><strong>{sum.headline}.{sum.deltaText ? ` ${sum.deltaText}.` : ''}</strong></p>{/if}
 			{#if fixing === code}
 				<FixForm course={c} onsave={saveFix} oncancel={() => (fixing = null)} />
+			{:else if fix}
+				<p class="pl-muted">
+					Your fix is in your plan{fix.sent ? ' and was sent' : ''}.
+					{#if !fix.sent}<button type="button" class="textbtn" onclick={sendFixes}>Send to UPLB Tools</button>{/if}
+					<button type="button" class="textbtn" onclick={() => (fixing = code)}>Change it</button>
+				</p>
 			{:else if !c.genericRequirement}
 				<p class="pl-muted">Is something wrong here? <button type="button" class="textbtn" onclick={() => (fixing = code)}>Fix this course</button></p>
 			{/if}
