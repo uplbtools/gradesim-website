@@ -177,6 +177,12 @@
 		border-top: 1px solid var(--border);
 	}
 
+	@media (max-width: 719px) {
+		.site-header {
+			position: static;
+		}
+	}
+
 	@media (max-width: 479px) {
 		.by,
 		.menu-word {
