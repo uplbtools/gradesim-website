@@ -120,7 +120,13 @@
 />
 
 {#if message}
-	<div class="wrap flash">
+	<div
+		class="wrap flash"
+		{@attach (el) => {
+			void message; // reruns for each new message
+			el.scrollIntoView({ block: 'nearest' });
+		}}
+	>
 		<Notice tone={message.tone} live>
 			{message.text}
 			{#snippet action()}
@@ -176,6 +182,7 @@
 
 <style>
 	.flash {
+		scroll-margin-top: 76px;
 		margin-top: 12px;
 	}
 
