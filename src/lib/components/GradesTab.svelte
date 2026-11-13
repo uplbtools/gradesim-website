@@ -8,10 +8,12 @@
 		groupGWA,
 		NON_NUMERIC_GRADES,
 		scholarFor,
+		scholarHolds,
 		substituteOptions
 	} from '#lib/grades.ts';
 	import { makeBackup, removeCourse, setGrade, VALID_GRADES } from '#lib/importers.ts';
 	import { today } from '#lib/planner.ts';
+	import { removalKey } from '#lib/requirements.ts';
 	import Icon from './Icon.svelte';
 	import FileButton from './FileButton.svelte';
 	import GradeEditor from './GradeEditor.svelte';
@@ -32,6 +34,7 @@
 	let subTaken = $state('');
 
 	const groups = $derived(groupCourses(app.courses, view));
+	const holds = $derived(scholarHolds(app.courses));
 	const subOptions = $derived(substituteOptions(app.program, app.gwa.completedCourses, app.s.substitutions));
 	const required = $derived([...app.program.majorCourses].sort((a, b) => a.code.localeCompare(b.code)));
 	const SOURCE = { extension: 'the GradeSim extension', file: 'a file you imported', manual: 'grades you entered' };
@@ -82,7 +85,7 @@
 	{#each groups as g (g.key)}
 		{@const group = groupGWA(g.courses, app.excluded)}
 		{@const gwa = group.gwa}
-		{@const scholar = scholarFor(group)}
+		{@const scholar = g.courses.some((c) => holds.has(c.termKey)) ? null : scholarFor(group)}
 		<section class="group" aria-label={g.label}>
 			<header>
 				<h2>{g.label}</h2>
@@ -94,19 +97,28 @@
 					{@const tone = gradeTone(c.grade)}
 					{@const nonNumeric = NON_NUMERIC_GRADES.includes(c.grade) || !c.grade}
 					{@const out = app.excluded.has(c.id)}
+					{@const raw = c.removalFrom ?? c.grade}
 					<li class:out>
 						<div class="info">
 							<span class="code">{c.code}</span>
 							<span class="title">{c.title}</span>
+							{#if !editing && parseFloat(raw) === 4}
+								{@const key = removalKey(c.termKey, c.code)}
+								<select class="select removal" aria-label="Removal exam result for {c.code}" value={app.s.removals[key] ?? ''} onchange={(e) => app.setRemoval(key, e.currentTarget.value)}>
+									<option value="">Removal exam not taken</option>
+									<option value="pass">Passed removal, 3.00</option>
+									<option value="fail">Failed removal, 5.00</option>
+								</select>
+							{/if}
 						</div>
 						<div class="right">
 							{#if editing}
 								<label>
 									<span class="visually-hidden">Grade for {c.code}</span>
-									<select class="select mini" value={c.grade} onchange={(e) => (app.s.gradesData = setGrade(app.s.gradesData!, c.termKey, c.id, e.currentTarget.value))}>
+									<select class="select mini" value={raw} onchange={(e) => (app.s.gradesData = setGrade(app.s.gradesData!, c.termKey, c.id, e.currentTarget.value))}>
 										<option value="">No grade yet</option>
 										{#each VALID_GRADES as v (v)}<option value={v}>{v}</option>{/each}
-										{#if c.grade && !VALID_GRADES.includes(c.grade)}<option value={c.grade}>{c.grade}</option>{/if}
+										{#if raw && !VALID_GRADES.includes(raw)}<option value={raw}>{raw}</option>{/if}
 									</select>
 								</label>
 								<button class="iconbtn" type="button" aria-label="Remove {c.code} from {c.termLabel}" onclick={() => (app.s.gradesData = removeCourse(app.s.gradesData!, c.termKey, c.id))}>
@@ -390,6 +402,16 @@
 		min-height: 40px;
 		width: auto;
 		padding: 4px 8px;
+	}
+
+	.removal {
+		align-self: flex-start;
+		min-height: 40px;
+		width: auto;
+		max-width: 100%;
+		margin-top: 4px;
+		padding: 4px 8px;
+		font-size: 0.82rem;
 	}
 
 	.subform {

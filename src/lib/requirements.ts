@@ -24,6 +24,29 @@ export function gradeResult(raw: unknown): Result {
 	return 'other';
 }
 
+export const removalKey = (termId: string, code: unknown) => `${termId}:${normalizeCourseCode(code)}`;
+
+/**
+ * A 4.00 is cleared by one removal exam. A pass makes it 3.00 and a fail makes
+ * it 5.00. removals maps removalKey(termId, code) to pass or fail. Returns a
+ * copy of the grades with those replaced, and the stored grades stay as they are.
+ */
+export function applyRemovals<G extends GradesData | null | undefined>(gradesData: G, removals: Record<string, string> | null | undefined): G {
+	if (!gradesData?.student_grades || !removals || !Object.keys(removals).length) return gradesData;
+	const student_grades = Object.fromEntries(
+		Object.entries(gradesData.student_grades).map(([termId, t]) => {
+			if (!t?.values) return [termId, t];
+			const values = t.values.map((v) => {
+				const result = removals[removalKey(termId, v.course?.course_code)];
+				if (parseFloat(String(v.grade)) !== 4 || (result !== 'pass' && result !== 'fail')) return v;
+				return { ...v, grade: result === 'pass' ? '3.00' : '5.00', removalFrom: String(v.grade) };
+			});
+			return [termId, { ...t, values }];
+		})
+	);
+	return { ...gradesData, student_grades };
+}
+
 export interface Row {
 	code: string;
 	title: string;

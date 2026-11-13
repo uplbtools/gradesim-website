@@ -23,12 +23,13 @@ test('round-trips its own backup', () => {
 		selectedProgram: 'BSBIO',
 		excludedCourses: ['3'],
 		substitutions: { 'MATH 27': 'STAT 101' },
+		removals: { '1251:MATH 27': 'pass' },
 		selectedSpecializations: { BSAAE: 'amp' }
 	});
 	const r = parseImport(JSON.stringify(file));
 	expect(r).toMatchObject({
 		kind: 'grades',
-		patch: { selectedProgram: 'BSBIO', excludedCourses: ['3'], substitutions: { 'MATH 27': 'STAT 101' }, selectedSpecializations: { BSAAE: 'amp' } }
+		patch: { selectedProgram: 'BSBIO', excludedCourses: ['3'], substitutions: { 'MATH 27': 'STAT 101' }, removals: { '1251:MATH 27': 'pass' }, selectedSpecializations: { BSAAE: 'amp' } }
 	});
 });
 

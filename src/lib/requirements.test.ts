@@ -6,7 +6,7 @@ import { UPLB_CATALOG } from './catalog.ts';
 import { getPlannerCourses, isNonGwaCourseCode, UPLB_PROGRAMS } from './curriculum.ts';
 import type { GradesData } from './grades.ts';
 import { compute, DEFAULT_PLANNER_OPTIONS, modelFor } from './planner.ts';
-import { amisCourses, gradeResult, gwaOutlook, plannerCourseList, remainingRequirements } from './requirements.ts';
+import { amisCourses, applyRemovals, gradeResult, gwaOutlook, plannerCourseList, remainingRequirements, removalKey } from './requirements.ts';
 import { enrichCourses, scheduleEarliest, semAt } from './scheduler.ts';
 
 test('grade results', () => {
@@ -173,4 +173,22 @@ test('BSCS special problem twice, midyear practicum and senior year electives', 
 	expect(view.info['CMSC 198'].status).toBe('passed');
 	expect(view.info['FE 1'].status).toBe('todo');
 	expect(view.conflicts).toEqual([{ code: 'CMSC 57', pre: 'CMSC 56' }]);
+});
+
+test('a 4.00 removal exam: a pass gives 3.00, a fail gives 5.00, other grades stay', () => {
+	const fours: GradesData = {
+		student_grades: { '1251': { values: [v('MATH 27', '', 3, '4.00'), v('CHEM 18', '', 3, '4.00'), v('STS 1', '', 3, '2.00')] } }
+	};
+	const removed = applyRemovals(fours, {
+		[removalKey('1251', 'math 27')]: 'pass',
+		[removalKey('1251', 'CHEM 18')]: 'fail',
+		[removalKey('1251', 'STS 1')]: 'fail'
+	});
+	expect(amisCourses(removed).map((r) => [r.code, r.grade, r.result])).toEqual([
+		['MATH 27', '3.00', 'passed'],
+		['CHEM 18', '5.00', 'failed'],
+		['STS 1', '2.00', 'passed']
+	]);
+	expect(fours.student_grades['1251'].values[0].grade).toBe('4.00');
+	expect(applyRemovals(fours, {})).toBe(fours);
 });
