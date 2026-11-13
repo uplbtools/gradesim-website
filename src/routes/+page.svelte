@@ -143,6 +143,7 @@
 {:else}
 	<div class="dash">
 		<div class={tab === 'planner' ? 'wide' : 'wrap'}>
+			<h1 class="visually-hidden">Your dashboard</h1>
 			<Summary />
 			<div class="tabs" role="tablist" aria-label="GradeSim sections">
 				{#each TABS as t, i (t.id)}
