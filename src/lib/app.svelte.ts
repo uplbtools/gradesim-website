@@ -1,6 +1,7 @@
 // App state. Everything lives in this browser's localStorage under one
 // versioned key; nothing is sent anywhere.
 
+import type { ChecklistFix } from './fix.ts';
 import { DEFAULT_PROGRAM, resolveSpecialization, UPLB_PROGRAMS } from './curriculum.ts';
 import { calculateGWA, parseAMISData, type GradesData } from './grades.ts';
 import type { GradesPatch } from './importers.ts';
@@ -25,6 +26,8 @@ export interface Saved {
 	plannerPetitions: Record<string, true>;
 	/** null until the planner first opens and picks a default cap for the program. */
 	plannerOptions: PlannerOptions | null;
+	/** Program code to the student's own corrections to its checklist. */
+	checklistFixes: Record<string, ChecklistFix[]>;
 }
 
 export const blank = (): Saved => ({
@@ -39,7 +42,8 @@ export const blank = (): Saved => ({
 	customCourseStatus: {},
 	plannerPins: {},
 	plannerPetitions: {},
-	plannerOptions: null
+	plannerOptions: null,
+	checklistFixes: {}
 });
 
 function read(): Saved {
@@ -70,6 +74,7 @@ class AppState {
 	program = $derived(UPLB_PROGRAMS[this.s.selectedProgram] ?? UPLB_PROGRAMS[DEFAULT_PROGRAM]);
 	hasData = $derived(this.courses.length > 0);
 	specialization = $derived(resolveSpecialization(this.program, this.s.selectedSpecializations[this.program.code]));
+	fixes = $derived(this.s.checklistFixes[this.program.code] ?? []);
 
 	load() {
 		this.s = read();
@@ -99,6 +104,15 @@ class AppState {
 		if (key) all[this.program.code] = key;
 		else delete all[this.program.code];
 		this.s.selectedSpecializations = all;
+	}
+
+	/** Save a fix for the current program. It replaces an earlier fix to the same course. */
+	setFix(fix: ChecklistFix) {
+		this.setFixes([...this.fixes.filter((f) => f.code !== fix.code), fix]);
+	}
+
+	setFixes(fixes: ChecklistFix[]) {
+		this.s.checklistFixes = { ...this.s.checklistFixes, [this.program.code]: fixes };
 	}
 
 	applyPlan(plan: PlanFile) {

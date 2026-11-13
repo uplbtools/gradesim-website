@@ -58,7 +58,7 @@
 				<p class="hint">A file can be a JSON backup from the extension or a plan you saved from this planner.</p>
 			</div>
 
-			<p class="privacy"><Icon name="shield" />Your grades stay in this browser. There are no accounts and nothing is uploaded.</p>
+			<p class="privacy"><Icon name="shield" />Your grades stay in this browser. There are no accounts and your grades are never uploaded.</p>
 		</div>
 
 		<figure class="shot">

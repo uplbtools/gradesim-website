@@ -55,6 +55,8 @@ export interface PlanCourse extends ChecklistCourse {
 	offered?: Offered | null;
 	inCatalog?: boolean;
 	petition?: boolean;
+	/** Changed by the student's own checklist fix. */
+	fixed?: boolean;
 }
 
 export const SEM_CYCLE: Sem[] = ['1', '2', 'midyear'];

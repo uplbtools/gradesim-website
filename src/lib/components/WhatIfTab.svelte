@@ -14,7 +14,7 @@
 	const track = $derived(planTrack(app.program, app.s.gradesData, app.s.track));
 	const quality = $derived(getProgramDataQuality(app.program.code));
 	const left = $derived.by(() => {
-		const model = app.program.available ? modelFor(app.program.code, track, app.specialization) : null;
+		const model = app.program.available ? modelFor(app.program.code, track, app.specialization, app.fixes) : null;
 		if (!model) return null;
 		return remainingRequirements(
 			model.courses,

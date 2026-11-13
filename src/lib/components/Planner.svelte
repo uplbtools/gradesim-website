@@ -22,6 +22,7 @@
 		summary,
 		termsLate,
 		termsText,
+		unitsText,
 		today,
 		whatIfMessage,
 		type Card,
@@ -29,14 +30,16 @@
 		type PlannerInput,
 		type WhatIfMode
 	} from '#lib/planner.ts';
+	import { fixIssue, fixText, type ChecklistFix } from '#lib/fix.ts';
 	import { preGroups } from '#lib/scheduler.ts';
 	import { buildPlannerSheets, writeXlsx } from '#lib/xlsx.ts';
+	import FixForm from './FixForm.svelte';
 	import Icon, { type IconName } from './Icon.svelte';
 	import Notice from './Notice.svelte';
 	import StatusLabel from './StatusLabel.svelte';
 	import './planner.css';
 
-	const model = $derived(modelFor(app.s.selectedProgram, planTrack(app.program, app.s.gradesData, app.s.track), app.specialization));
+	const model = $derived(modelFor(app.s.selectedProgram, planTrack(app.program, app.s.gradesData, app.s.track), app.specialization, app.fixes));
 	const quality = $derived(getProgramDataQuality(app.s.selectedProgram));
 	const options = $derived(app.s.plannerOptions ?? DEFAULT_PLANNER_OPTIONS);
 	const input = $derived<PlannerInput>({
@@ -67,6 +70,36 @@
 	let menu: HTMLDetailsElement | undefined = $state();
 	let planInput: HTMLInputElement | undefined = $state();
 	let sheetEl: HTMLDivElement | undefined = $state();
+	// The course whose fix form is open, or 'add' for a missing course.
+	let fixing = $state<string | null>(null);
+	let acted = $state<string | null>(null);
+
+	function saveFix(fix: ChecklistFix) {
+		app.setFix(fix);
+		fixing = null;
+		if (fix.kind === 'remove') selected = null;
+		status = `${fix.code} ${fixText(fix)}. Your plan now uses this.`;
+	}
+
+	async function sendFixes() {
+		const program = app.program.code;
+		const fixes = app.fixes.filter((f) => !f.sent);
+		let ok = false;
+		try {
+			const res = await fetch('/api/fix/', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ program, fixes }) });
+			ok = res.ok;
+		} catch {
+			/* offline or no function: fall back to GitHub */
+		}
+		if (ok) {
+			app.setFixes(app.fixes.map((f) => ({ ...f, sent: true })));
+			notice = { text: 'Sent. A maintainer will review your fixes. Thank you.', bad: false };
+		} else {
+			const issue = fixIssue(program, fixes);
+			window.open(`https://github.com/uplbtools/gradesim/issues/new?${new URLSearchParams(issue)}`, '_blank', 'noopener');
+			notice = { text: 'GitHub opened in a new tab with your fixes filled in. Submit the issue there to send them.', bad: false };
+		}
+	}
 
 	const chain = $derived.by(() => {
 		if (!selected || !model) return null;
@@ -143,6 +176,7 @@
 			delete next[code];
 			app.s.plannerPins = next;
 		}
+		acted = code;
 		focusCard(code);
 	}
 
@@ -254,30 +288,32 @@
 		{@const delay = model.graph.delay[code] || 1}
 		{@const deps = model.graph.edges.filter((e) => e.from === code).map((e) => e.to)}
 		{@const past = i.tries.length > 0}
+		{@const fix = app.fixes.find((f) => f.code === code)}
 		{@const off = c.offered as Record<number, number> | null | undefined}
 		<aside class="pl-detail" aria-label="Details for {code}">
 			<div class="pl-detail-head">
 				<div>
-					<p class="pl-detail-code">{c.code} <StatusLabel status={card ? card.status : i.status === 'failed' ? 'failed' : 'planned'} /></p>
+					<p class="pl-detail-code">{c.code} <StatusLabel status={card ? card.status : i.status === 'failed' ? 'failed' : 'planned'} label={card?.waitingOn ? `Waiting on ${card.waitingOn}` : undefined} /></p>
 					<p class="pl-detail-title">{c.title}</p>
 				</div>
 				<button type="button" class="pl-close" aria-label="Close details" onclick={() => select(code)}><Icon name="x" /></button>
 			</div>
 			<p class="pl-muted">
-				{`${c.units} units, offered ${offeringLabel(c).toLowerCase()}${off ? ` (${off[1] ?? 0} of 4 first sems, ${off[2] ?? 0} of 3 second sems, ${off[3] ?? 0} of 2 midyears seen)` : ''}.${t !== undefined ? ` Planned for ${absLabel(view.startAbs + t)}.` : ''}`}
+				{`${unitsText(c.units)}, offered ${offeringLabel(c).toLowerCase()}${off && !c.fixed ? ` (${off[1] ?? 0} of 4 first sems, ${off[2] ?? 0} of 3 second sems, ${off[3] ?? 0} of 2 midyears seen)` : ''}.${t !== undefined ? ` Planned for ${absLabel(view.startAbs + t)}.` : ''}`}
 			</p>
-			{#if card?.waitingOn}<p class="pl-note"><Icon name="lock" size={14} />Waiting on {card.waitingOn}</p>{/if}
-			<ul class="pl-metrics">
-				<li><strong>{blocking}</strong> {blocking === 1 ? 'course' : 'courses'} blocked if this is failed</li>
-				<li><strong>{delay}</strong> {delay === 1 ? 'course' : 'courses'} on the longest chain through it</li>
-				{#if slip !== undefined}
-					{#if slip > 0}
-						<li class="bad"><strong>Critical.</strong> Taking it a term later delays graduation by {slip === Infinity ? 'more than the plan can show' : termsText(termsLate(view, view.now.result.gradTermIndex, view.now.result.gradTermIndex + slip))}.</li>
-					{:else}
-						<li>Has slack. Taking it a term later does not move graduation.</li>
+			{#if blocking || delay > 1 || slip !== undefined}
+				<ul class="pl-metrics">
+					{#if blocking}<li><strong>{blocking}</strong> {blocking === 1 ? 'course' : 'courses'} blocked if this is failed</li>{/if}
+					{#if delay > 1}<li><strong>{delay}</strong> courses on the longest chain through it</li>{/if}
+					{#if slip !== undefined}
+						{#if slip > 0}
+							<li class="bad"><strong>Critical.</strong> Taking it a term later delays graduation by {slip === Infinity ? 'more than the plan can show' : termsText(termsLate(view, view.now.result.gradTermIndex, view.now.result.gradTermIndex + slip))}.</li>
+						{:else}
+							<li>Has slack. Taking it a term later does not move graduation.</li>
+						{/if}
 					{/if}
-				{/if}
-			</ul>
+				</ul>
+			{/if}
 			{#if c.options}
 				<h4>Take one of these</h4>
 				<ul class="pl-reqs">
@@ -302,11 +338,9 @@
 			{:else}
 				<p class="pl-muted">No prerequisites.</p>
 			{/if}
-			<h4>Unlocks</h4>
 			{#if deps.length}
+				<h4>Unlocks</h4>
 				<p class="pl-deps">{#each deps as d (d)}{@render group([d])}{/each}</p>
-			{:else}
-				<p class="pl-muted">Nothing else in your checklist.</p>
 			{/if}
 			<div class="pl-actions">
 				{#if i.status !== 'passed'}<button type="button" class="btn btn-secondary" onclick={() => act('passed', code)}><Icon name="check" />Mark passed</button>{/if}
@@ -315,11 +349,23 @@
 				{#if t !== undefined}<button type="button" class="textbtn" onclick={() => act('later', code)}>Take a term later</button>{/if}
 				{#if app.s.plannerPins[code] != null}<button type="button" class="textbtn" onclick={() => act('unpin', code)}>Back to earliest</button>{/if}
 			</div>
+			{#if acted === code && sum}<p><strong>{sum.headline}.{sum.deltaText ? ` ${sum.deltaText}.` : ''}</strong></p>{/if}
 			{#if restricted(c) && i.status !== 'passed'}
 				<label class="pl-petition">
 					<input type="checkbox" checked={!!app.s.plannerPetitions[code]} onchange={(e) => togglePetition(code, e.currentTarget.checked)} />
 					<span>Plan on a petitioned class when it is not offered. It needs about 10 students and department, college and OVCAA approval, so treat it as conditional.</span>
 				</label>
+			{/if}
+			{#if fixing === code}
+				<FixForm course={c} onsave={saveFix} oncancel={() => (fixing = null)} />
+			{:else if fix}
+				<p class="pl-muted">
+					Your fix is in your plan{fix.sent ? ' and was sent' : ''}.
+					{#if !fix.sent}<button type="button" class="textbtn" onclick={sendFixes}>Send to UPLB Tools</button>{/if}
+					<button type="button" class="textbtn" onclick={() => (fixing = code)}>Change it</button>
+				</p>
+			{:else if !c.genericRequirement}
+				<p class="pl-muted">Is something wrong here? <button type="button" class="textbtn" onclick={() => (fixing = code)}>Fix this course</button></p>
 			{/if}
 		</aside>
 	{/if}
@@ -350,17 +396,17 @@
 		{/if}
 
 		<section class="pl-summary" aria-live="polite">
-			<p class="pl-grad" data-testid="grad-term">
+			<h2 class="pl-grad" data-testid="grad-term">
 				<span>{sum.headline}</span>
 				{#if sum.deltaText}<span class="pl-delta" class:ok={sum.deltaOk}><Icon name={sum.deltaOk ? 'check' : 'alert'} />{sum.deltaText}</span>{/if}
-			</p>
+			</h2>
 			<p class="pl-sub">{sum.sub}</p>
 			{#if sum.costs.length || view.conflicts.length}
 				<ul class="pl-costs">
 					{#each sum.costs as c (c.code)}
 						<li class:bad={c.cost > 0}>
 							<Icon name={c.cost > 0 ? 'x' : 'check'} size={16} />
-							<span><strong>{c.code}</strong> {c.source === 'whatif' ? '(what-if)' : c.past ? 'failed' : '(marked failed)'}, {c.cost > 0 ? `+${termsText(c.cost)}` : 'no delay'}</span>
+							<span><strong>{c.code}</strong> {c.source === 'whatif' ? 'in the what-if' : c.past ? 'failed' : 'marked failed'}, {c.cost > 0 ? `${termsText(c.cost)} later` : 'no delay'}</span>
 						</li>
 					{/each}
 					{#each view.conflicts as c (c.code + c.pre)}
@@ -389,7 +435,7 @@
 				{#if app.whatif}<button class="textbtn" type="button" onclick={clearWhatif}>Clear</button>{/if}
 			</form>
 			<details class="pl-tips">
-				<summary><Icon name="info" size={16} />How to read this</summary>
+				<summary><Icon name="info" size={16} />Tips</summary>
 				<div class="pl-tips-pop">
 					<p>Each block is a term. Past terms come from your grades. Future terms are the earliest plan that respects prerequisites, the sems each course is actually offered, and your unit cap.</p>
 					<p>Select a course to see what it requires, what it unlocks and how many courses a failure would block. Mark a course failed to see the retake and the delay.</p>
@@ -442,6 +488,24 @@
 
 		<p class="pl-result" aria-live="polite">{wiResult}</p>
 
+		{#if app.fixes.length}
+			<section class="pl-fixes" aria-label="Your fixes to this checklist">
+				<h3>Your fixes to this checklist</h3>
+				<ul>
+					{#each app.fixes as f (f.code)}
+						<li>
+							<span><strong>{f.code}</strong> {fixText(f)}{f.sent ? ' (sent)' : ''}</span>
+							<button type="button" class="textbtn" onclick={() => app.setFixes(app.fixes.filter((x) => x !== f))}>Undo</button>
+						</li>
+					{/each}
+				</ul>
+				<p class="pl-muted">Your plan already uses these. Sending them lets UPLB Tools fix the checklist for everyone. Only the fixes are sent, never your grades.</p>
+				<div class="pl-actions">
+					{#if app.fixes.some((f) => !f.sent)}<button type="button" class="btn btn-secondary" onclick={sendFixes}><Icon name="upload" />Send to UPLB Tools</button>{/if}
+				</div>
+			</section>
+		{/if}
+
 		<div class="pl-sheet" data-testid="planner-sheet" bind:this={sheetEl}>
 			{#each years as year (year.label)}
 				<section class="pl-year" aria-label={year.label}>
@@ -460,7 +524,7 @@
 								</span>
 								{#if f.warn}<span class="visually-hidden">{f.warn}</span>{/if}
 							</summary>
-							<ul class="pl-rows">
+							<ul class="pl-rows" class:nograde={!term.cards.some((c) => c.grade)}>
 								{#each term.cards as card (card)}
 									{@const c = model.byCode.get(card.code)!}
 									{@const facts = cardFacts(card, view)}
@@ -471,6 +535,7 @@
 											type="button"
 											class="pl-row st-{card.status}"
 											class:history={card.history || card.hypothetical}
+											class:generic={!!c.genericRequirement}
 											class:chain={chain?.has(card.code) && !(selected === card.code && isPrimary)}
 											class:dim={chain && !chain.has(card.code)}
 											data-code={card.code}
@@ -498,6 +563,14 @@
 					{/each}
 				</section>
 			{/each}
+		</div>
+
+		<div class="pl-fixes pl-add">
+			{#if fixing === 'add'}
+				<FixForm onsave={saveFix} oncancel={() => (fixing = null)} />
+			{:else}
+				<button type="button" class="textbtn" onclick={() => (fixing = 'add')}>Add a course the checklist is missing</button>
+			{/if}
 		</div>
 
 		<span class="visually-hidden" aria-live="polite">{status}</span>

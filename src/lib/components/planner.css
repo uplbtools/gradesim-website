@@ -1,27 +1,5 @@
 /* Course planner, ported from the extension (extension/src/planner.css). Classes are pl- prefixed, so this sheet is global. */
 
-
-
-
-
-
-.pl-banner {
-  display: flex;
-  gap: 8px;
-  align-items: flex-start;
-  padding: 10px 14px;
-  margin-bottom: 12px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  background: var(--bg-elevated);
-  color: var(--body);
-}
-
-.pl-banner .icon {
-  color: var(--info);
-  margin-top: 2px;
-}
-
 /* Summary: the answer first. */
 .pl-summary {
   margin: 6px 0 14px;
@@ -36,6 +14,7 @@
   font-weight: 800;
   font-size: clamp(1.6rem, 3.2vw, 2.4rem);
   line-height: 1.15;
+  text-wrap: balance;
   color: var(--ink);
 }
 
@@ -109,7 +88,6 @@
   flex: 1 1 auto;
 }
 
-
 .pl-whatif .select,
 .pl-menu .select {
   min-height: 40px;
@@ -122,9 +100,9 @@
   width: auto;
 }
 
-
 .pl-menu {
   position: relative;
+  margin-left: auto;
 }
 
 .pl-menu > summary {
@@ -142,7 +120,7 @@
   position: absolute;
   right: 0;
   top: calc(100% + 6px);
-  z-index: 40; /* above the fixed detail panel (30) */
+  z-index: 40;
   width: 290px;
   display: flex;
   flex-direction: column;
@@ -182,7 +160,16 @@
 .pl-check {
   flex-direction: row;
   align-items: center;
+  justify-content: flex-start;
   gap: 8px;
+}
+
+.pl-check input,
+.pl-petition input {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  accent-color: var(--brand);
 }
 
 .pl-danger {
@@ -233,10 +220,85 @@
 }
 
 .pl-result {
-  min-height: 1.2em;
-  margin: 4px 0 8px;
+  max-width: 70ch;
+  text-wrap: balance;
+  margin: 12px 0 20px;
   color: var(--ink);
+  font-size: 0.92rem;
   font-weight: 500;
+}
+
+.pl-result:empty {
+  margin-top: 0;
+}
+
+/* Checklist fixes */
+.pl-fixes {
+  margin-bottom: 20px;
+  font-size: 0.86rem;
+}
+
+.pl-fixes h3 {
+  margin: 0 0 4px;
+  font-size: 0.9rem;
+  color: var(--ink);
+}
+
+.pl-fixes ul {
+  margin: 0 0 6px;
+  padding: 0;
+  list-style: none;
+}
+
+.pl-fixes li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 12px;
+}
+
+.pl-fixes .pl-actions {
+  margin-top: 8px;
+}
+
+.pl-add {
+  margin: 20px 0 0;
+}
+
+.pl-fix {
+  display: grid;
+  gap: 10px;
+  max-width: 460px;
+  margin-top: 12px;
+}
+
+.pl-detail .pl-fix {
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+.pl-fix fieldset {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.pl-fix legend {
+  padding: 0;
+  font-weight: 600;
+}
+
+.pl-fix small {
+  font-weight: 400;
+  color: var(--muted);
+}
+
+.pl-fix-error {
+  color: var(--bad);
+  font-weight: 600;
 }
 
 /* Sheet: academic years, each term a table of one-line rows. Status is an icon plus a word, never color alone. */
@@ -244,7 +306,6 @@
   display: flex;
   flex-direction: column;
   gap: 28px;
-  max-width: 880px;
 }
 
 .pl-year h3 {
@@ -283,6 +344,7 @@
 }
 
 .pl-term-name {
+  white-space: nowrap;
   font-weight: 600;
   color: var(--ink);
 }
@@ -305,6 +367,7 @@
   display: flex;
   gap: 12px;
   margin-left: auto;
+  white-space: nowrap;
   font-size: 0.8rem;
   font-variant-numeric: tabular-nums;
   color: var(--muted);
@@ -334,6 +397,14 @@
 
 .pl-rows > li {
   display: contents;
+}
+
+.pl-rows.nograde {
+  grid-template-columns: 18px max-content minmax(0, 1fr) auto 2ch;
+}
+
+.nograde .pl-row-grade {
+  display: none;
 }
 
 .pl-row {
@@ -423,23 +494,6 @@
   color: var(--muted);
 }
 
-.pl-note {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  margin-top: 2px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  font-size: 0.72rem;
-  font-weight: 600;
-  color: var(--body);
-}
-
-.pl-note.warn {
-  color: var(--warn);
-}
-
 .pl-status.st-passed,
 .pl-row.st-passed .pl-mark { color: var(--ok); }
 
@@ -464,7 +518,7 @@
 
 /* Selection: the selected row, then its prerequisites and what it unlocks. */
 .pl-row.dim {
-  opacity: 0.5;
+  opacity: 0.8;
 }
 
 .pl-row.chain {
@@ -621,15 +675,11 @@ button.pl-link:hover {
 }
 
 .pl-petition input {
-  margin-top: 3px;
+  margin-top: 1px;
 }
 
 /* Wide: first and second sem sit side by side, like the printed checklist. */
 @media (min-width: 1100px) {
-  .pl-sheet {
-    max-width: none;
-  }
-
   .pl-year {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -651,27 +701,29 @@ button.pl-link:hover {
 }
 
 /* Phone: the title and the note drop under the code. */
+@media (min-width: 720px) and (max-width: 959px) {
+  .pl-whatif {
+    flex-basis: 100%;
+  }
+
+  .pl-tips {
+    margin-left: 0;
+  }
+}
+
 @media (max-width: 719px) {
   .pl-whatif .select {
     flex: 1 1 40%;
     min-width: 0;
   }
 
-  .pl-whatif .btn-primary {
-    flex: 1 1 100%;
-  }
-
   .pl-controls {
-    align-items: stretch;
+    position: relative;
+    column-gap: 8px;
   }
 
   .pl-menu {
-    width: 100%;
-  }
-
-  .pl-menu > summary {
-    width: 100%;
-    justify-content: center;
+    position: static;
   }
 
   .pl-menu-pop {
@@ -684,9 +736,30 @@ button.pl-link:hover {
     margin-left: 0;
   }
 
+  .pl-tips[open] {
+    flex-basis: 100%;
+  }
+
+  .pl-tips > summary {
+    padding: 0;
+  }
+
+  .pl-tips-pop {
+    position: static;
+    width: auto;
+    padding: 4px 8px 0;
+    border: 0;
+    background: none;
+    box-shadow: none;
+  }
+
   .pl-rows {
     grid-template-columns: 18px minmax(0, 1fr) 2ch 4ch;
     column-gap: 10px;
+  }
+
+  .pl-rows.nograde {
+    grid-template-columns: 18px minmax(0, 1fr) 2ch;
   }
 
   .pl-row {
@@ -701,6 +774,16 @@ button.pl-link:hover {
 
   .pl-title {
     white-space: normal;
+  }
+
+  .pl-row.generic .pl-code,
+  .pl-row.generic .pl-title {
+    grid-row: 1;
+  }
+
+  .pl-row.generic .pl-title {
+    padding-left: 7ch;
+    white-space: nowrap;
   }
 
   .pl-row-units {
