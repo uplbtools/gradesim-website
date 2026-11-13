@@ -125,9 +125,9 @@
 							{/if}
 							<span class="units">{c.units}u</span>
 							{#if !editing}
-								<span class="grade {tone}">
-									{#if tone === 'failed'}<Icon name="x" size={14} />{:else if tone === 'other'}<Icon name="alert" size={14} />{/if}
-									{formatGrade(c.grade)}
+								<span class="grade {c.grade ? tone : 'none'}">
+									{#if tone === 'failed'}<Icon name="x" size={14} />{:else if tone === 'other' && c.grade}<Icon name="alert" size={14} />{/if}
+									{c.grade ? formatGrade(c.grade) : 'No grade yet'}
 								</span>
 							{/if}
 						</div>
@@ -349,6 +349,11 @@
 
 	.grade.other {
 		color: var(--warn);
+	}
+
+	.grade.none {
+		font-weight: 500;
+		color: var(--muted);
 	}
 
 	.excl {
