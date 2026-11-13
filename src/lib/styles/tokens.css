@@ -64,7 +64,7 @@
 
 /* Dark values are written twice: once for the system setting (unless the user
    forced light) and once for a forced dark choice. Keep both blocks in sync. */
-@media (prefers-color-scheme: dark) {
+@media screen and (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     --brand: hsl(6, 68%, 74%);
     --brand-deep: hsl(6, 78%, 84%);
@@ -95,34 +95,36 @@
   }
 }
 
-:root[data-theme="dark"] {
-  color-scheme: dark;
-  --brand: hsl(6, 68%, 74%);
-  --brand-deep: hsl(6, 78%, 84%);
-  --brand-tint: hsl(6 68% 74% / 0.1);
-  --brand-tint-strong: hsl(6 68% 74% / 0.18);
-  --brand-line: hsl(6 68% 74% / 0.35);
-  --brand-green: hsl(145, 45%, 55%);
-  --on-brand: hsl(5, 40%, 12%);
+@media screen {
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --brand: hsl(6, 68%, 74%);
+    --brand-deep: hsl(6, 78%, 84%);
+    --brand-tint: hsl(6 68% 74% / 0.1);
+    --brand-tint-strong: hsl(6 68% 74% / 0.18);
+    --brand-line: hsl(6 68% 74% / 0.35);
+    --brand-green: hsl(145, 45%, 55%);
+    --on-brand: hsl(5, 40%, 12%);
 
-  --bg-page: hsl(20, 8%, 11%);
-  --bg-card: hsl(20, 7%, 15%);
-  --bg-elevated: hsl(20, 7%, 17%);
-  --border: hsl(20, 7%, 26%);
-  --border-input: hsl(20, 7%, 40%);
+    --bg-page: hsl(20, 8%, 11%);
+    --bg-card: hsl(20, 7%, 15%);
+    --bg-elevated: hsl(20, 7%, 17%);
+    --border: hsl(20, 7%, 26%);
+    --border-input: hsl(20, 7%, 40%);
 
-  --ink: hsl(30, 12%, 91%);
-  --body: hsl(30, 7%, 78%);
-  --muted: hsl(30, 7%, 68%);
+    --ink: hsl(30, 12%, 91%);
+    --body: hsl(30, 7%, 78%);
+    --muted: hsl(30, 7%, 68%);
 
-  --ok: hsl(145, 50%, 60%);
-  --bad: hsl(0, 80%, 74%);
-  --warn: hsl(38, 85%, 62%);
-  --info: hsl(206, 80%, 72%);
+    --ok: hsl(145, 50%, 60%);
+    --bad: hsl(0, 80%, 74%);
+    --warn: hsl(38, 85%, 62%);
+    --info: hsl(206, 80%, 72%);
 
-  --shadow-sm: 0 1px 2px hsl(0 0% 0% / 0.3);
-  --shadow-md: 0 2px 4px hsl(0 0% 0% / 0.3), 0 10px 24px hsl(0 0% 0% / 0.35);
-  --shadow-lg: 0 4px 10px hsl(0 0% 0% / 0.35), 0 20px 44px hsl(0 0% 0% / 0.45);
+    --shadow-sm: 0 1px 2px hsl(0 0% 0% / 0.3);
+    --shadow-md: 0 2px 4px hsl(0 0% 0% / 0.3), 0 10px 24px hsl(0 0% 0% / 0.35);
+    --shadow-lg: 0 4px 10px hsl(0 0% 0% / 0.35), 0 20px 44px hsl(0 0% 0% / 0.45);
+  }
 }
 
 :root[data-theme="light"] {

@@ -31,7 +31,7 @@
 			<span class="by">by UPLB Tools</span>
 		</a>
 
-		{#if onApp && app.ready && app.hasData}
+		{#if onApp && app.ready && (app.hasData || app.blank)}
 			<label class="program">
 				<span class="visually-hidden">Your degree program</span>
 				<select class="select" bind:value={app.s.selectedProgram}>
@@ -177,6 +177,12 @@
 		border-top: 1px solid var(--border);
 	}
 
+	@media (max-width: 719px) {
+		.site-header {
+			position: static;
+		}
+	}
+
 	@media (max-width: 479px) {
 		.by,
 		.menu-word {
@@ -187,11 +193,18 @@
 	@media (min-width: 720px) {
 		.bar {
 			padding: 8px 24px;
+			flex-wrap: nowrap;
+		}
+
+		.brand,
+		.tools {
+			flex: none;
 		}
 
 		.program {
 			order: 0;
 			flex: 0 1 340px;
+			min-width: 0;
 		}
 	}
 </style>

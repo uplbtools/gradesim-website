@@ -1,9 +1,10 @@
 // Course planner logic, ported from the extension (extension/src/planner.js).
 // Everything here is pure: Planner.svelte renders what these return.
 
+import type { ChecklistFix } from './fix.ts';
 import { UPLB_CATALOG } from './catalog.ts';
 import { detectTrack, resolveSpecialization, resolveTrack, UPLB_PROGRAMS, type Program } from './curriculum.ts';
-import { ayOfAbs, termKeyToAbs, type GradesData } from './grades.ts';
+import { ayOfAbs, gradeText, termKeyToAbs, type GradesData } from './grades.ts';
 import {
 	amisCourses,
 	fillRequirementSlots,
@@ -18,6 +19,7 @@ import {
 	normCode,
 	offeredIn,
 	preGroups,
+	prereqConflicts,
 	scheduleEarliest,
 	type Graph,
 	type PlanCourse,
@@ -40,7 +42,7 @@ export function absLabel(abs: number): string {
 }
 export const ayLabel = ayOfAbs;
 
-// ponytail: month heuristic for the current term (Aug-Dec 1st, Jan-May 2nd,
+// Month heuristic for the current term (Aug-Dec 1st, Jan-May 2nd,
 // Jun-Jul midyear). Only used when grades are older than the calendar.
 export function calendarAbs(now = new Date()): number {
 	const y = now.getFullYear();
@@ -98,14 +100,35 @@ export function planTrack(program: Program, gradesData: GradesData | null | unde
 const models = new Map<string, Model>();
 
 /** The program's courses for a track and specialization merged with the catalog, plus its prerequisite graph. Cached per program, track and specialization. */
-export function modelFor(code: string, chosenTrack: string | null = null, chosenSpecialization: string | null = null): Model | null {
+/** A course list with the student's own checklist fixes applied. */
+export function applyFixes(courses: PlanCourse[], fixes: ChecklistFix[]): PlanCourse[] {
+	let out = courses;
+	for (const f of fixes) {
+		const patch: Partial<PlanCourse> = { fixed: true };
+		if (f.title) patch.title = f.title;
+		if (f.units) patch.units = f.units;
+		if (f.prereqs) Object.assign(patch, { pre: f.prereqs.map((p) => [p]), co: [], standing: null, coi: false, note: null });
+		if (f.sems) Object.assign(patch, { offered: { 1: +f.sems.includes('1'), 2: +f.sems.includes('2'), 3: +f.sems.includes('midyear') }, catalogSem: null });
+		if (f.kind === 'remove') out = out.filter((c) => c.code !== f.code);
+		else if (f.kind === 'edit') out = out.map((c) => (c.code === f.code ? { ...c, ...patch } : c));
+		else if (!out.some((c) => c.code === f.code)) out = [...out, { code: f.code, title: f.title!, units: f.units!, ...patch }];
+	}
+	return out;
+}
+
+export function modelFor(
+	code: string,
+	chosenTrack: string | null = null,
+	chosenSpecialization: string | null = null,
+	fixes: ChecklistFix[] = []
+): Model | null {
 	const program = UPLB_PROGRAMS[code];
 	if (!program || !program.majorCourses) return null;
 	const track = resolveTrack(program, chosenTrack);
 	const specialization = resolveSpecialization(program, chosenSpecialization);
-	const key = `${code}:${track}:${specialization}`;
+	const key = `${code}:${track}:${specialization}:${JSON.stringify(fixes)}`;
 	if (!models.has(key)) {
-		const courses = plannerCourseList(program, track, UPLB_CATALOG, specialization);
+		const courses = applyFixes(plannerCourseList(program, track, UPLB_CATALOG, specialization), fixes);
 		models.set(key, {
 			code,
 			program,
@@ -130,6 +153,7 @@ export interface Attempt {
 	result: Result;
 	abs: number;
 	order: number;
+	grade: string;
 	via?: string;
 }
 
@@ -149,6 +173,7 @@ export function readHistory(model: Model, input: PlannerInput, now = new Date())
 				title: (v.course && v.course.title) || '',
 				units: parseFloat(String(v.unit_taken)) || 0,
 				result: gradeResult(v.grade),
+				grade: gradeText(v.grade),
 				abs,
 				order: i
 			});
@@ -179,14 +204,17 @@ export function readHistory(model: Model, input: PlannerInput, now = new Date())
 	const push = (code: string, a: Attempt) => {
 		(byCurr[code] = byCurr[code] || []).push(a);
 	};
+	// Once a course is passed, later attempts go to its "CODE (n)" row.
 	list.forEach((a) => {
-		if (model.byCode.has(a.code)) push(a.code, a);
+		let code = a.code;
+		for (let n = 2; (byCurr[code] || []).some((x) => x.result === 'passed') && model.byCode.has(`${a.code} (${n})`); n++) code = `${a.code} (${n})`;
+		if (model.byCode.has(code)) push(code, a);
 	});
 
 	// Slots filled the same way the What if tab counts them.
 	const doneOrNow = list.filter((a) => a.result === 'passed' || a.result === 'inprogress');
 	fillRequirementSlots(model.courses, doneOrNow, input.substitutions).forEach((a, slot) => {
-		if (a.code !== slot && model.byCode.has(slot)) push(slot, { ...a, via: a.code });
+		if (a.code !== slot && model.byCode.has(slot) && !(byCurr[slot] || []).includes(a)) push(slot, { ...a, via: a.code });
 	});
 
 	return { attempts: list, byCurr, latestAbs, passedOutside: new Set(doneOrNow.map((a) => a.code)) };
@@ -312,7 +340,9 @@ export function compute(model: Model, input: PlannerInput, now = new Date()) {
 		{ substitutions: input.substitutions, overrides: input.customCourseStatus }
 	);
 
-	const v = { model, input, hist, info, startAbs, passed: nowRun.passed, failures, costs, now: nowRun, ideal, noWhatif, slips, unitCaps, left };
+	const conflicts = prereqConflicts(model.courses, (code) => (info[code] ? info[code].status : passed.has(code) && 'passed'));
+
+	const v = { model, input, hist, info, startAbs, passed: nowRun.passed, failures, costs, now: nowRun, ideal, noWhatif, slips, unitCaps, left, conflicts };
 	v.costs.forEach((c) => {
 		c.cost = termsLate(v, c.costT[0], c.costT[1]);
 	});
@@ -355,7 +385,7 @@ export function summary(v: View) {
 			: `because of ${v.failures.length} failed courses`;
 		deltaText = `+${termsText(delta)} ${why}`;
 	} else if (v.failures.length) {
-		deltaText = `No delay from ${v.failures.length === 1 ? v.failures[0].code : 'your failed courses'}`;
+		deltaText = `No delay from ${v.failures.length === 1 ? v.failures[0].code : v.failures.some((f) => f.source === 'whatif') ? 'your failed courses or the what-if' : 'your failed courses'}`;
 		deltaOk = true;
 	}
 
@@ -365,12 +395,9 @@ export function summary(v: View) {
 	if (gradAbs != null)
 		sentences.push(`That is ${ayLabel(gradAbs)}, with ${termsText(termsLeft)} of classes from ${absLabel(v.startAbs)}.`);
 	sentences.push(`You have ${unitsText(v.left.units)} left to pass${nowTaking ? ', counting this term' : ''}.`);
-	sentences.push(
-		`The plan takes up to ${v.unitCaps['1']} units a sem and ${v.input.plannerOptions.midyear ? `up to ${v.unitCaps.midyear} in midyear` : 'midyear only where the checklist puts it'}.`
-	);
 	const sub = sentences.join(' ');
 
-	const showCosts = v.costs.length > 1 || (v.costs.length === 1 && v.costs[0].source !== 'whatif');
+	const showCosts = v.costs.length > 1;
 	return { headline, deltaText, deltaOk, sub, costs: showCosts ? v.costs : [] };
 }
 
@@ -404,6 +431,7 @@ export interface Card {
 	code: string;
 	status: CardStatus;
 	via?: string;
+	grade?: string;
 	history?: boolean;
 	credited?: boolean;
 	hypothetical?: boolean;
@@ -445,7 +473,7 @@ export function buildColumns(v: View): { list: Column[]; primary: Record<string,
 			if (!st) return;
 			if (isLast && i.override) st = i.override === 'planned' ? null : i.override;
 			if (!st) return;
-			const card: Card = { code: c.code, status: st, via: a.via, history: !isLast };
+			const card: Card = { code: c.code, status: st, via: a.via, grade: a.grade, history: !isLast };
 			col(a.abs).cards.push(card);
 			if (isLast && st !== 'failed') primary[c.code] = card;
 		});
@@ -495,7 +523,6 @@ export function buildColumns(v: View): { list: Column[]; primary: Record<string,
 /**
  * Barycenter sweeps: order each column by the mean row of a card's
  * prerequisites (left to right), then of its dependents (right to left).
- * ponytail: plain barycenter, no crossing count; d3-dag if this looks bad.
  */
 function orderColumns(model: Model, list: Column[], primary: Record<string, Card>) {
 	const delay = model.graph.delay;
