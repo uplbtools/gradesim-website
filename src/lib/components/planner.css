@@ -163,8 +163,12 @@
   gap: 8px;
 }
 
-.pl-check input {
+.pl-check input,
+.pl-petition input {
   flex: none;
+  width: 18px;
+  height: 18px;
+  accent-color: var(--brand);
 }
 
 .pl-danger {
@@ -215,10 +219,16 @@
 }
 
 .pl-result {
-  min-height: 1.2em;
-  margin: 4px 0 8px;
+  max-width: 70ch;
+  text-wrap: balance;
+  margin: 12px 0 20px;
   color: var(--ink);
+  font-size: 0.92rem;
   font-weight: 500;
+}
+
+.pl-result:empty {
+  margin-top: 0;
 }
 
 /* Checklist fixes */
@@ -507,7 +517,7 @@
 
 /* Selection: the selected row, then its prerequisites and what it unlocks. */
 .pl-row.dim {
-  opacity: 0.5;
+  opacity: 0.8;
 }
 
 .pl-row.chain {
@@ -664,7 +674,7 @@ button.pl-link:hover {
 }
 
 .pl-petition input {
-  margin-top: 3px;
+  margin-top: 1px;
 }
 
 /* Wide: first and second sem sit side by side, like the printed checklist. */
