@@ -334,11 +334,9 @@
 			{:else}
 				<p class="pl-muted">No prerequisites.</p>
 			{/if}
-			<h4>Unlocks</h4>
 			{#if deps.length}
+				<h4>Unlocks</h4>
 				<p class="pl-deps">{#each deps as d (d)}{@render group([d])}{/each}</p>
-			{:else}
-				<p class="pl-muted">Nothing else in your checklist.</p>
 			{/if}
 			<div class="pl-actions">
 				{#if i.status !== 'passed'}<button type="button" class="btn btn-secondary" onclick={() => act('passed', code)}><Icon name="check" />Mark passed</button>{/if}
