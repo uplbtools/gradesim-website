@@ -443,7 +443,7 @@
 				{#if app.whatif}<button class="textbtn" type="button" onclick={clearWhatif}>Clear</button>{/if}
 			</form>
 			<details class="pl-tips">
-				<summary><Icon name="info" size={16} />How to read this</summary>
+				<summary><Icon name="info" size={16} />Tips</summary>
 				<div class="pl-tips-pop">
 					<p>Each block is a term. Past terms come from your grades. Future terms are the earliest plan that respects prerequisites, the sems each course is actually offered, and your unit cap.</p>
 					<p>Select a course to see what it requires, what it unlocks and how many courses a failure would block. Mark a course failed to see the retake and the delay.</p>
