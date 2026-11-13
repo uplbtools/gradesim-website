@@ -120,6 +120,19 @@ export function fillRequirementSlots<R extends Row>(
 	return fill;
 }
 
+/**
+ * Latin honors count only as many electives as the program requires, the
+ * earliest first. Returns the passed rows that fill no slot, which the honors
+ * GWA leaves out. A program with no elective slots returns none, since its
+ * data cannot tell extra from missing.
+ */
+export function surplusElectives<R extends Row>(courses: PlanCourse[], passedRows: R[], substitutions: Record<string, string> = {}): R[] {
+	if (!courses.some((c) => c.genericRequirement === 'elective')) return [];
+	const used = new Set(fillRequirementSlots(courses, passedRows, substitutions).values());
+	const named = new Set(courses.filter((c) => !c.genericRequirement).map((c) => normalizeCourseCode(c.code)));
+	return passedRows.filter((r) => !used.has(r) && !named.has(normalizeCourseCode(r.code)) && !isNonGwaCourseCode(r.code) && r.units > 0);
+}
+
 /** The planner's course list: checklist rows for the track and specialization plus GE, HK, NSTP and free elective slots, with catalog data. */
 export function plannerCourseList(
 	program: Program,

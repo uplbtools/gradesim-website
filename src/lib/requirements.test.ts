@@ -8,6 +8,7 @@ import type { GradesData } from './grades.ts';
 import { compute, DEFAULT_PLANNER_OPTIONS, modelFor } from './planner.ts';
 import { amisCourses, gradeResult, gwaOutlook, plannerCourseList, remainingRequirements } from './requirements.ts';
 import { enrichCourses, scheduleEarliest, semAt } from './scheduler.ts';
+import { surplusElectives } from './requirements.ts';
 
 test('grade results', () => {
 	expect(gradeResult('1.00')).toBe('passed');
@@ -89,6 +90,16 @@ test('no made up free electives, and planner marks count', () => {
 	expect(remainingRequirements(plannerCourseList(UPLB_PROGRAMS.BSFST, null, UPLB_CATALOG), []).electives.totalUnits).toBe(6);
 	const marked = remainingRequirements(courses, passedRows, { overrides: { 'CMSC 123': 'passed', 'CMSC 12': 'failed' } });
 	expect(marked.units).toBe(left.units);
+});
+
+test('honors count only the required electives, the earliest first', () => {
+	const list = plannerCourseList(BSCS, 'sp', UPLB_CATALOG);
+	const feSlots = list.filter((c) => /^FE\b/.test(c.code)).length;
+	const extra = Array.from({ length: feSlots + 2 }, (_, i) => ({ code: `SOC ${100 + i}`, title: 'Elective', units: 3, grade: '1.00', result: 'passed', termId: String(1231 + i) }));
+	const named = { code: 'CMSC 12', title: 'Foundations of Computer Science', units: 3, grade: '1.00', result: 'passed', termId: '1231' };
+	expect(surplusElectives(list, [named, ...extra]).map((r) => r.code)).toEqual(extra.slice(-2).map((r) => r.code));
+	expect(surplusElectives(list, [named, ...extra.slice(0, feSlots)])).toEqual([]);
+	expect(surplusElectives(list.filter((c) => c.genericRequirement !== 'elective'), extra)).toEqual([]);
 });
 
 test('GWA outlook', () => {

@@ -1,10 +1,27 @@
 <script lang="ts">
 	import { app } from '#lib/app.svelte.ts';
-	import { honorFor } from '#lib/grades.ts';
+	import { normalizeCourseCode } from '#lib/curriculum.ts';
+	import { calculateGWA, honorFor } from '#lib/grades.ts';
+	import { modelFor, planTrack } from '#lib/planner.ts';
+	import { amisCourses, surplusElectives } from '#lib/requirements.ts';
 	import Icon from './Icon.svelte';
 
 	const g = $derived(app.gwa);
-	const honor = $derived(honorFor(g.gwa, g.totalUnits));
+	// Extra electives stay in the GWA but not in the one for Latin honors.
+	const surplus = $derived.by(() => {
+		const model = app.program.available ? modelFor(app.program.code, planTrack(app.program, app.s.gradesData, app.s.track), app.specialization, app.fixes) : null;
+		const passed = amisCourses(app.s.gradesData).filter((r) => r.result === 'passed');
+		return model ? surplusElectives(model.courses, passed, app.s.substitutions) : [];
+	});
+	const honors = $derived.by(() => {
+		if (!surplus.length) return g;
+		const skip = new Set(surplus.map((r) => `${r.termId}:${r.code}`));
+		return calculateGWA(
+			app.courses.filter((c) => !skip.has(`${c.termKey}:${normalizeCourseCode(c.code)}`)),
+			app.excluded
+		);
+	});
+	const honor = $derived(honorFor(honors.gwa, honors.totalUnits));
 </script>
 
 <section class="summary" aria-label="Summary">
@@ -24,6 +41,13 @@
 			<dt>Courses in your GWA</dt>
 			<dd>{g.totalCourses}{#if g.excludedCount}<small> ({g.excludedCount} left out)</small>{/if}</dd>
 		</div>
+		{#if surplus.length}
+			<div class="wide">
+				<dt>GWA for Latin honors</dt>
+				<dd data-testid="honors-gwa">{honors.gwa.toFixed(4)}</dd>
+				<dd class="note">Counts only the electives your program requires, the earliest first. Leaves out {surplus.map((r) => r.code).join(', ')}.</dd>
+			</div>
+		{/if}
 	</dl>
 </section>
 
@@ -94,10 +118,16 @@
 		font-variant-numeric: tabular-nums;
 	}
 
-	dd small {
+	dd small,
+	dd.note {
 		font-size: 0.75rem;
 		font-weight: 500;
 		color: var(--muted);
+	}
+
+	.wide {
+		grid-column: 1 / -1;
+		max-width: 60ch;
 	}
 
 	@media (min-width: 720px) {
