@@ -72,6 +72,7 @@
 	let sheetEl: HTMLDivElement | undefined = $state();
 	// The course whose fix form is open, or 'add' for a missing course.
 	let fixing = $state<string | null>(null);
+	let acted = $state<string | null>(null);
 
 	function saveFix(fix: ChecklistFix) {
 		app.setFix(fix);
@@ -175,6 +176,7 @@
 			delete next[code];
 			app.s.plannerPins = next;
 		}
+		acted = code;
 		focusCard(code);
 	}
 
@@ -346,6 +348,7 @@
 				{#if t !== undefined}<button type="button" class="textbtn" onclick={() => act('later', code)}>Take a term later</button>{/if}
 				{#if app.s.plannerPins[code] != null}<button type="button" class="textbtn" onclick={() => act('unpin', code)}>Back to earliest</button>{/if}
 			</div>
+			{#if acted === code && sum}<p><strong>{sum.headline}.{sum.deltaText ? ` ${sum.deltaText}.` : ''}</strong></p>{/if}
 			{#if fixing === code}
 				<FixForm course={c} onsave={saveFix} oncancel={() => (fixing = null)} />
 			{:else if !c.genericRequirement}
