@@ -24,6 +24,12 @@
 	const tracks = $derived(app.program.tracks ? Object.entries(app.program.tracks) : []);
 	const specs = $derived(app.program.specializations ? Object.entries(app.program.specializations) : []);
 	const spec = $derived(app.specialization ? app.program.specializations![app.specialization] : null);
+	// Courses a specialization adds outright (BS MST) show as one take-all list.
+	const specRows = $derived(new Map((spec?.courses ?? []).map((c) => [c.code, c])));
+	const pools = $derived([
+		...(spec?.pools ?? []),
+		...(specRows.size ? [{ name: 'Courses for this specialization', slots: [...specRows.keys()], courses: [...specRows.keys()] }] : [])
+	]);
 	const passedCodes = $derived(new Set(rows.filter((r) => r.result === 'passed').map((r) => r.code)));
 	const g = $derived(app.gwa);
 
@@ -197,16 +203,17 @@
 						</select>
 					</label>
 					{#if spec}
-						{#each spec.pools as pool (pool.name)}
+						{#each pools as pool (pool.name)}
 							<h3 class="pool">{pool.name}</h3>
 							<p class="muted small">
 								{pool.courses.length > pool.slots.length ? `Take ${pool.slots.length} of these ${pool.courses.length}.` : `Take all ${pool.courses.length}.`}
 							</p>
 							<dl>
 								{#each pool.courses as code (code)}
+									{@const entry = UPLB_CATALOG[code] ?? specRows.get(code)}
 									<div>
-										<dt>{code} <span class="muted">{UPLB_CATALOG[code]?.title.replace(/\.$/, '') ?? ''}</span></dt>
-										<dd>{passedCodes.has(code) ? 'Passed' : `${UPLB_CATALOG[code]?.units ?? 3} units`}</dd>
+										<dt>{code} <span class="muted">{entry?.title?.replace(/\.$/, '') ?? ''}</span></dt>
+										<dd>{passedCodes.has(code) ? 'Passed' : `${entry?.units ?? 3} units`}</dd>
 									</div>
 								{/each}
 							</dl>

@@ -64,7 +64,7 @@ test('all 35 programs ship with a checklist, six of them coming soon', () => {
 	expect(programs).toHaveLength(35);
 	programs.forEach((p) => expect(p.majorCourses.length).toBeGreaterThan(0));
 	expect(programs.filter((p) => !p.available).map((p) => p.code).sort()).toEqual(
-		['AAENTREP', 'AAFOR', 'AASS', 'ASDC', 'BSMATE', 'BSMST']
+		['AAENTREP', 'AAFOR', 'AASS', 'ASDC', 'BSMATE']
 	);
 });
 

@@ -25,7 +25,9 @@ export interface Specialization {
 	name: string;
 	source: string;
 	note?: string;
-	pools: SpecializationPool[];
+	pools?: SpecializationPool[];
+	/** Full checklist rows the specialization adds. A row with a slot replaces that MAJ slot. */
+	courses?: (ChecklistCourse & { slot?: string })[];
 }
 
 export interface Program {
@@ -227,6 +229,7 @@ export function resolveSpecialization(program: Pick<Program, 'specializations'> 
  * A specialization fills the program's MAJ slots from its pools. A pool with
  * one course per slot puts those courses in the slots. A pool with more
  * courses than slots keeps the slots and lists the courses as options.
+ * Its courses are full rows it adds, or puts in a slot when the row names one.
  */
 export function applySpecialization(
 	rows: ChecklistCourse[],
@@ -236,17 +239,26 @@ export function applySpecialization(
 	const spec = key ? program?.specializations?.[key] : undefined;
 	if (!spec) return rows;
 	const bySlot = new Map<string, { pool: SpecializationPool; i: number }>();
-	spec.pools.forEach((pool) => pool.slots.forEach((slot, i) => bySlot.set(slot, { pool, i })));
-	return rows.map((row) => {
-		const hit = bySlot.get(row.code);
-		if (!hit) return row;
-		const { pool, i } = hit;
-		// Title, prerequisites and offerings come from the catalog.
-		if (pool.courses.length === pool.slots.length) {
-			return { code: pool.courses[i], title: '', units: row.units, year: row.year, sem: row.sem, prereqs: [] };
-		}
-		return { ...row, title: `${pool.name}, ${spec.name}`, options: pool.courses };
-	});
+	(spec.pools || []).forEach((pool) => pool.slots.forEach((slot, i) => bySlot.set(slot, { pool, i })));
+	const toRow = (c: ChecklistCourse & { slot?: string }): ChecklistCourse => {
+		const course = { prereqs: [], ...c };
+		delete course.slot;
+		return course;
+	};
+	const fixed = new Map((spec.courses || []).filter((c) => c.slot).map((c) => [c.slot!, toRow(c)]));
+	return rows
+		.map((row) => {
+			if (fixed.has(row.code)) return fixed.get(row.code)!;
+			const hit = bySlot.get(row.code);
+			if (!hit) return row;
+			const { pool, i } = hit;
+			// Title, prerequisites and offerings come from the catalog.
+			if (pool.courses.length === pool.slots.length) {
+				return { code: pool.courses[i], title: '', units: row.units, year: row.year, sem: row.sem, prereqs: [] };
+			}
+			return { ...row, title: `${pool.name}, ${spec.name}`, options: pool.courses };
+		})
+		.concat((spec.courses || []).filter((c) => !c.slot).map(toRow));
 }
 
 export function getPlannerCourses(

@@ -2,7 +2,7 @@
 // curriculum-data.test.js, requirements.test.js and planner-sweep.test.js.
 import { expect, test } from 'vitest';
 import { UPLB_CATALOG } from './catalog.ts';
-import { getPlannerCourses, normalizeCourseCode, UPLB_PROGRAMS } from './curriculum.ts';
+import { getPlannerCourses, isNonGwaCourseCode, normalizeCourseCode, UPLB_PROGRAMS } from './curriculum.ts';
 import { modelFor } from './planner.ts';
 import { plannerCourseList, remainingRequirements } from './requirements.ts';
 import { enrichCourses, scheduleEarliest } from './scheduler.ts';
@@ -15,31 +15,43 @@ test('BS AAE, BS ABME and BS Economics list their catalog specializations', () =
 	expect(Object.keys(UPLB_PROGRAMS.BSECON.specializations!)).toEqual(['development', 'environmental']);
 });
 
-// FRM 110 is on CEM catalog page 97 but had no AMIS class in the terms we have.
-const NOT_IN_AMIS = new Set(['FRM 110']);
+// These are in the catalog PDFs but had no AMIS class in the terms we have.
+const NOT_IN_AMIS = new Set(['FRM 110', 'BIO 151', 'BIO 130A', 'BIO 130B', 'MCB 101', 'BOT 110', 'BOT 140', 'ZOO 140', 'ZOO 113', 'CHEM 102', 'PHYS 193.1', 'WLDL 101']);
 
 test('every specialization course is real, not already required, and fills MAJ elective rows', () => {
 	const checklist = new Set(Object.values(UPLB_PROGRAMS).flatMap((p) => (p.majorCourses || []).map((c) => normalizeCourseCode(c.code))));
 	const failures: string[] = [];
+	const units = (list: { units?: number }[]) => list.reduce((s, c) => s + (c.units || 0), 0);
 	withSpecs.forEach((p) => {
 		const rows = new Map(p.majorCourses.map((c) => [normalizeCourseCode(c.code), c]));
-		const baseUnits = getPlannerCourses(p, p.defaultTrack).reduce((s, c) => s + (c.units || 0), 0);
+		const baseUnits = units(getPlannerCourses(p, p.defaultTrack));
 		Object.entries(p.specializations!).forEach(([key, spec]) => {
 			if (!/page \d+/.test(spec.source)) failures.push(`${p.code} ${key}: no catalog page`);
-			spec.pools.forEach((pool) => {
+			const courseRows = spec.courses || [];
+			courseRows.forEach((c) => {
+				if (c.slot && rows.get(c.slot)?.genericRequirement !== 'elective') failures.push(`${p.code} ${key}: ${c.slot} is not a MAJ elective row`);
+				if (!c.title || !(c.units! > 0) || !(c.year! >= 1) || !['1', '2', 'midyear'].includes(String(c.sem))) failures.push(`${p.code} ${key}: ${c.code} row is incomplete`);
+			});
+			const checkCourse = (code: string) => {
+				if (!UPLB_CATALOG[code] && !checklist.has(code) && !NOT_IN_AMIS.has(code)) failures.push(`${p.code} ${key}: ${code} is in no catalog or checklist`);
+				if (rows.has(code)) failures.push(`${p.code} ${key}: ${code} is already required`);
+			};
+			courseRows.forEach((c) => checkCourse(c.code));
+			(spec.pools || []).forEach((pool) => {
 				if (pool.courses.length < pool.slots.length) failures.push(`${p.code} ${key}: fewer courses than slots`);
 				pool.slots.forEach((slot) => {
 					if (rows.get(slot)?.genericRequirement !== 'elective') failures.push(`${p.code} ${key}: ${slot} is not a MAJ elective row`);
 				});
-				pool.courses.forEach((code) => {
-					if (!UPLB_CATALOG[code] && !checklist.has(code) && !NOT_IN_AMIS.has(code)) failures.push(`${p.code} ${key}: ${code} is in no catalog or checklist`);
-					if (rows.has(code)) failures.push(`${p.code} ${key}: ${code} is already required`);
-				});
+				pool.courses.forEach(checkCourse);
 			});
 			const plan = getPlannerCourses(p, p.defaultTrack, key);
 			const codes = plan.map((c) => normalizeCourseCode(c.code));
 			if (new Set(codes).size !== codes.length) failures.push(`${p.code} ${key}: a course twice`);
-			if (plan.reduce((s, c) => s + (c.units || 0), 0) !== baseUnits) failures.push(`${p.code} ${key}: unit total changed`);
+			const added = courseRows.reduce((s, c) => s + (c.units || 0) - (c.slot ? rows.get(c.slot)?.units || 0 : 0), 0);
+			if (units(plan) !== baseUnits + added) failures.push(`${p.code} ${key}: unit total changed`);
+			const stated = Number((spec.note || '').match(/^(\d+) units in all/)?.[1]);
+			const gwaUnits = units(plan.filter((c) => !isNonGwaCourseCode(c.code)));
+			if (stated && gwaUnits !== stated) failures.push(`${p.code} ${key}: plans ${gwaUnits} units, the catalog says ${stated}`);
 			const r = scheduleEarliest({
 				courses: enrichCourses(plan, UPLB_CATALOG),
 				passed: new Set(),
@@ -50,6 +62,15 @@ test('every specialization course is real, not already required, and fills MAJ e
 		});
 	});
 	expect(failures).toEqual([]);
+});
+
+test('a BS MST specialization adds its own courses to the plan', () => {
+	const mst = UPLB_PROGRAMS.BSMST;
+	expect(mst.available).toBe(true);
+	expect(Object.keys(mst.specializations!)).toEqual(['biology', 'chemistry', 'mathematics', 'physics']);
+	const codes = getPlannerCourses(mst, null, 'biology').map((c) => c.code);
+	expect(codes).toEqual(expect.arrayContaining(['BOT 14', 'BIO 150', 'MCB 11', 'ZOO 14', 'HFDS 130']));
+	expect(getPlannerCourses(mst, null).some((c) => c.code === 'BOT 14')).toBe(false);
 });
 
 test('a chosen field lists its pool on the slots and only pool courses fill them', () => {

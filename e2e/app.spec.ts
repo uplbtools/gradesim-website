@@ -105,7 +105,7 @@ test('What if and the planner count the same units left', async ({ page }) => {
 
 test('programs without a checklist show as coming soon', async ({ page }) => {
 	await importFixture(page);
-	const option = page.getByRole('combobox', { name: 'Your degree program' }).locator('option[value="BSMST"]');
+	const option = page.getByRole('combobox', { name: 'Your degree program' }).locator('option[value="BSMATE"]');
 	await expect(option).toHaveAttribute('disabled');
 	await expect(option).toContainText('coming soon');
 });
