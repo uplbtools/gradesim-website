@@ -168,7 +168,7 @@
 
 			{#if tracks.length}
 				<details class="track">
-					<summary>Track</summary>
+					<summary>{app.program.tracks![(detected ?? track)!].name}{detected ? '' : ' (assumed)'}</summary>
 					{#if detected}
 						<Notice tone="ok">Your grades show the {app.program.tracks![detected].name} ({app.program.tracks![detected].code}).</Notice>
 					{:else}
@@ -349,9 +349,9 @@
 
 	.track summary {
 		cursor: pointer;
+		padding: 8px 0;
 		font-weight: 650;
 		color: var(--ink);
-		margin-bottom: 8px;
 	}
 
 	.pool {
