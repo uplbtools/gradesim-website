@@ -385,7 +385,7 @@ export function summary(v: View) {
 			: `because of ${v.failures.length} failed courses`;
 		deltaText = `+${termsText(delta)} ${why}`;
 	} else if (v.failures.length) {
-		deltaText = `No delay from ${v.failures.length === 1 ? v.failures[0].code : 'your failed courses'}`;
+		deltaText = `No delay from ${v.failures.length === 1 ? v.failures[0].code : v.failures.some((f) => f.source === 'whatif') ? 'your failed courses or the what-if' : 'your failed courses'}`;
 		deltaOk = true;
 	}
 
