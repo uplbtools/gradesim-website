@@ -73,7 +73,7 @@
 	</div>
 
 	{#if manual}
-		<section class="card manual" aria-labelledby="manual-title">
+		<section class="card manual" aria-labelledby="manual-title" {@attach (el) => el.scrollIntoView()}>
 			<h2 id="manual-title">Add your first course</h2>
 			<p class="muted">Pick the term, then add each course. Your dashboard opens after the first one.</p>
 			<GradeEditor />
@@ -161,6 +161,7 @@
 
 	.manual {
 		margin-top: 32px;
+		scroll-margin-top: 76px;
 	}
 
 	.manual h2 {
