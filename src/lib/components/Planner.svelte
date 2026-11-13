@@ -524,6 +524,7 @@
 											type="button"
 											class="pl-row st-{card.status}"
 											class:history={card.history || card.hypothetical}
+											class:generic={!!c.genericRequirement}
 											class:chain={chain?.has(card.code) && !(selected === card.code && isPrimary)}
 											class:dim={chain && !chain.has(card.code)}
 											data-code={card.code}

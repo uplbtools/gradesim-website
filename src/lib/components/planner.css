@@ -750,6 +750,16 @@ button.pl-link:hover {
     white-space: normal;
   }
 
+  .pl-row.generic .pl-code,
+  .pl-row.generic .pl-title {
+    grid-row: 1;
+  }
+
+  .pl-row.generic .pl-title {
+    padding-left: 7ch;
+    white-space: nowrap;
+  }
+
   .pl-row-units {
     grid-area: 1 / 3;
   }
