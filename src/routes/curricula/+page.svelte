@@ -80,17 +80,14 @@
 			<ul>
 				{#each programs as [name, slug, pages] (slug)}
 					<li>
-						<button class="program card" type="button" onclick={() => show(college, name, slug, pages)}>
-							<span>{name}</span>
-							<span class="muted">{pages} {pages === 1 ? 'page' : 'pages'}</span>
-						</button>
+						<button class="program" type="button" onclick={() => show(college, name, slug, pages)}>{name}</button>
 					</li>
 				{/each}
 				{#each plannerOnly(college) as p (p.code)}
 					<li>
-						<a class="program card planner-only" href="{resolve('/')}?program={p.code}#planner">
+						<a class="program" href="{resolve('/')}?program={p.code}#planner">
 							<span>{p.name}</span>
-							<span class="muted">Planner only for now</span>
+							<span class="muted">planner only</span>
 						</a>
 					</li>
 				{/each}
@@ -132,41 +129,41 @@
 	.college ul {
 		list-style: none;
 		padding: 0;
-		display: grid;
-		gap: 8px;
-		grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+		columns: 280px;
+		column-gap: 32px;
+	}
+
+	.college li {
+		break-inside: avoid;
+		border-top: 1px solid var(--border);
 	}
 
 	.program {
 		width: 100%;
-		min-height: 56px;
+		min-height: 44px;
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
 		gap: 12px;
-		padding: 12px 16px;
+		padding: 8px 4px;
+		border: 0;
+		background: none;
+		font: inherit;
+		font-weight: 500;
 		text-align: left;
-		font-weight: 600;
 		color: var(--ink);
 		text-decoration: none;
 		cursor: pointer;
 	}
 
 	.program:hover {
-		border-color: var(--brand);
-	}
-
-	.planner-only {
-		flex-direction: column;
-		align-items: flex-start;
-		justify-content: center;
-		gap: 2px;
+		color: var(--brand);
 	}
 
 	.program .muted {
 		font-weight: 400;
-		font-size: 0.85rem;
-		flex: 0 0 auto;
+		font-size: 0.8rem;
+		flex: none;
 	}
 
 	dialog {
