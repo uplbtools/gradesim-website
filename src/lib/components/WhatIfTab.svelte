@@ -226,7 +226,14 @@
 <style>
 	.whatif {
 		display: grid;
-		gap: 16px;
+		gap: 28px;
+	}
+
+	.whatif > .card {
+		padding: 0;
+		border: 0;
+		background: none;
+		box-shadow: none;
 	}
 
 	.h {
@@ -358,8 +365,42 @@
 		margin-top: 8px;
 	}
 
+	@media (max-width: 719px) {
+		.targets {
+			grid-template-columns: minmax(0, 1fr);
+		}
+
+		.tname {
+			font-size: 0.92rem;
+		}
+
+		.target {
+			flex-direction: row;
+			align-items: center;
+			justify-content: space-between;
+			gap: 8px;
+			min-height: 48px;
+			padding: 6px 12px;
+		}
+
+		.tname,
+		.tmax {
+			white-space: nowrap;
+		}
+
+		.tmax {
+			font-size: 0.75rem;
+		}
+
+		.custom {
+			width: 6.5em;
+			margin-top: 0;
+		}
+	}
+
 	@media (min-width: 900px) {
 		.whatif {
+			column-gap: 48px;
 			grid-template-columns: 1fr 1fr;
 			align-items: start;
 		}
