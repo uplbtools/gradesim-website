@@ -55,6 +55,7 @@
 		const program = url.searchParams.get('program');
 		if (program && UPLB_PROGRAMS[program]?.available) {
 			app.s.selectedProgram = program;
+			app.blank = true;
 			url.searchParams.delete('program');
 			history.replaceState(history.state, '', url.pathname + url.search + url.hash);
 		}
@@ -120,7 +121,13 @@
 />
 
 {#if message}
-	<div class="wrap flash">
+	<div
+		class="wrap flash"
+		{@attach (el) => {
+			void message; // reruns for each new message
+			el.scrollIntoView({ block: 'nearest' });
+		}}
+	>
 		<Notice tone={message.tone} live>
 			{message.text}
 			{#snippet action()}
@@ -130,13 +137,22 @@
 	</div>
 {/if}
 
-{#if !app.ready || !app.hasData}
+{#if !app.ready || (!app.hasData && !app.blank)}
 	<div class:welcome-pending={!app.ready}>
 		<Welcome {extension} {manual} onExtension={fromExtension} onFile={fromFile} onManual={() => (manual = true)} />
+	</div>
+{:else if !app.hasData}
+	<div class="dash wide">
+		<p class="blank">
+			This is the {app.program.name} checklist planned from a blank transcript.
+			<button class="textbtn" type="button" onclick={() => (app.blank = false)}>Add your grades</button> to plan from where you are.
+		</p>
+		<Planner />
 	</div>
 {:else}
 	<div class="dash">
 		<div class={tab === 'planner' ? 'wide' : 'wrap'}>
+			<h1 class="visually-hidden">Your dashboard</h1>
 			<Summary />
 			<div class="tabs" role="tablist" aria-label="GradeSim sections">
 				{#each TABS as t, i (t.id)}
@@ -176,6 +192,7 @@
 
 <style>
 	.flash {
+		scroll-margin-top: 76px;
 		margin-top: 12px;
 	}
 
@@ -222,8 +239,20 @@
 
 	@media (max-width: 479px) {
 		.tabs button {
-			padding: 8px 10px;
+			flex: 1 1 auto;
+			padding: 8px 4px;
 		}
+	}
+
+	.blank {
+		margin: 20px 0 16px;
+		color: var(--muted);
+	}
+
+	.blank .textbtn {
+		display: inline;
+		min-height: 0;
+		padding: 0;
 	}
 
 	.wide {

@@ -24,10 +24,6 @@
 			<dt>Courses in your GWA</dt>
 			<dd>{g.totalCourses}{#if g.excludedCount}<small> ({g.excludedCount} left out)</small>{/if}</dd>
 		</div>
-		<div>
-			<dt>Program</dt>
-			<dd class="prog">{app.program.name}</dd>
-		</div>
 	</dl>
 </section>
 
@@ -80,8 +76,8 @@
 	.stats {
 		margin: 0;
 		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-		gap: 12px;
+		grid-template-columns: repeat(2, minmax(0, max-content));
+		gap: 12px 40px;
 	}
 
 	dt {
@@ -102,10 +98,6 @@
 		font-size: 0.75rem;
 		font-weight: 500;
 		color: var(--muted);
-	}
-
-	.prog {
-		font-size: 1rem;
 	}
 
 	@media (min-width: 720px) {

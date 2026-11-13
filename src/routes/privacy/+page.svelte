@@ -5,12 +5,12 @@
 
 <Seo
 	title="Privacy policy, Elbi GradeSim"
-	description="How Elbi GradeSim handles your data. Grades stay in your browser, in the web app's local storage or the extension's storage. Nothing is uploaded."
+	description="How Elbi GradeSim handles your data. Grades stay in your browser, in the web app's local storage or the extension's storage. Your grades are never uploaded."
 	path="/privacy/"
 />
 
 <div class="wrap">
-	<PageHead title="Privacy policy">Last updated October 6, 2026</PageHead>
+	<PageHead title="Privacy policy">Last updated November 13, 2026</PageHead>
 
 	<article class="prose">
 		<h2>What Elbi GradeSim is</h2>
@@ -31,6 +31,14 @@
 			<li>No cloud sync. Clearing your browser data, or using Clear my data on the Grades tab, removes what was saved.</li>
 			<li>Backups and plan files you export are saved as files on your device, and you decide where they go.</li>
 		</ul>
+
+		<h2>Checklist fixes you choose to send</h2>
+		<p>
+			When a course in the planner is wrong, you can fix it for your own plan. The fix is saved in your browser like
+			everything else. If you press Send to UPLB Tools, the app sends the program code, your course fixes and your optional
+			note, and nothing else. They are posted as a public issue on the GradeSim GitHub repository so that maintainers can
+			review them. Your grades, GWA and plan are never part of it.
+		</p>
 
 		<h2>The extension</h2>
 		<p>

@@ -56,15 +56,16 @@
 					</button>
 				</div>
 				<p class="hint">A file can be a JSON backup from the extension or a plan you saved from this planner.</p>
+				<p class="hint">No grades yet? <a href={resolve('curricula/')}>See your program's checklist</a>.</p>
 			</div>
 
-			<p class="privacy"><Icon name="shield" />Your grades stay in this browser. There are no accounts and nothing is uploaded.</p>
+			<p class="privacy"><Icon name="shield" />Your grades stay in this browser. There are no accounts and your grades are never uploaded.</p>
 		</div>
 
 		<figure class="shot">
 			<ThemedShot
 				name="planner-crop"
-				alt="Part of the planner. A failed MATH 27 shows its retake, and the courses waiting on it move to later terms."
+				alt="Part of the planner. The next term lists the planned courses and the retake of a failed MATH 27."
 				width={1086}
 				height={798}
 			/>
@@ -72,7 +73,7 @@
 	</div>
 
 	{#if manual}
-		<section class="card manual" aria-labelledby="manual-title">
+		<section class="card manual" aria-labelledby="manual-title" {@attach (el) => el.scrollIntoView()}>
 			<h2 id="manual-title">Add your first course</h2>
 			<p class="muted">Pick the term, then add each course. Your dashboard opens after the first one.</p>
 			<GradeEditor />
@@ -160,6 +161,7 @@
 
 	.manual {
 		margin-top: 32px;
+		scroll-margin-top: 76px;
 	}
 
 	.manual h2 {
