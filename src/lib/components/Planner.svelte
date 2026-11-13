@@ -406,7 +406,7 @@
 					{#each sum.costs as c (c.code)}
 						<li class:bad={c.cost > 0}>
 							<Icon name={c.cost > 0 ? 'x' : 'check'} size={16} />
-							<span><strong>{c.code}</strong> {c.source === 'whatif' ? '(what-if)' : c.past ? 'failed' : '(marked failed)'}, {c.cost > 0 ? `+${termsText(c.cost)}` : 'no delay'}</span>
+							<span><strong>{c.code}</strong> {c.source === 'whatif' ? 'in the what-if' : c.past ? 'failed' : 'marked failed'}, {c.cost > 0 ? `${termsText(c.cost)} later` : 'no delay'}</span>
 						</li>
 					{/each}
 					{#each view.conflicts as c (c.code + c.pre)}
