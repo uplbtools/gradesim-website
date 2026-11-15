@@ -7,11 +7,11 @@
 	const faq = [
 		{
 			q: 'Is this an official UPLB tool?',
-			a: 'No. Elbi GradeSim is built by students under UPLB Tools and is not affiliated with or endorsed by UPLB, the UP System, or AMIS. Treat every number here as an estimate and confirm anything important with your college secretary or the Office of the University Registrar.'
+			a: "No. GradeSim is built by students under UPLB Tools and isn't affiliated with or endorsed by UPLB, the UP System, or AMIS. Treat every number here as an estimate and confirm anything important with your college secretary or the Office of the University Registrar."
 		},
 		{
 			q: 'Where do my grades go?',
-			a: 'Nowhere. The web app keeps your grades in this browser’s local storage, and the extension keeps them in its own storage on your device. There are no accounts, no analytics, and no server that receives grades.'
+			a: 'They stay on your device. The web app keeps your grades in this browser’s local storage, and the extension keeps them in its own storage on your device. There are no accounts, no analytics, and no server that receives grades. You can save a backup or clear everything on the Grades tab.'
 		},
 		{
 			q: 'How is the GWA computed?',
@@ -19,19 +19,19 @@
 		},
 		{
 			q: 'What are the Latin honors cutoffs?',
-			a: 'GradeSim uses a GWA of 1.20 or better for Summa Cum Laude, 1.45 for Magna Cum Laude and 1.75 for Cum Laude. Honors also depend on residency, unit load and having no failing or dropped grades, which GradeSim cannot check for you.'
+			a: "GradeSim uses a GWA of 1.20 or better for summa cum laude, 1.45 for magna cum laude and 1.75 for cum laude. Honors also depend on residency, unit load and having no failing or dropped grades, which GradeSim can't check for you."
 		},
 		{
 			q: 'How does the planner decide when I graduate?',
-			a: 'It places every remaining course in the earliest term that satisfies its prerequisites and corequisites, falls in a semester the course is actually offered (from AMIS class listings for 2023 to 2026), and fits your unit cap. Courses where a one-term slip moves your graduation are marked critical.'
+			a: 'It places every remaining course in the earliest sem that meets its prerequisites, that AMIS has offered the course in (from class listings for 2023 to 2026) and that fits your unit cap. It flags a course when taking it a sem later moves your graduation.'
 		},
 		{
 			q: 'My program is missing or a course looks wrong.',
-			a: 'Curriculum data comes from the official checklists and is checked by volunteers. In the planner, select the course and choose Fix this course. Your plan uses the fix right away, and you can send it to UPLB Tools so the checklist is fixed for everyone. For a missing program, open an issue on GitHub.'
+			a: 'The checklists come from the official ones and are checked by volunteers. In the planner, select the course and choose Fix this course. Your plan uses the fix right away, and you can send it to UPLB Tools so the checklist is fixed for everyone. For a missing program, open an issue on GitHub.'
 		},
 		{
 			q: 'Can I use it on my phone?',
-			a: 'Yes. Install it from your browser menu (Add to Home Screen) and it works offline after the first visit. Firefox for Android can install the extension, and in Chrome or Safari the bookmark on the Install page saves your AMIS grades as a file to import.'
+			a: 'Yes. Install it from your browser menu (Add to Home Screen) and it works offline after the first visit. Firefox for Android can install the extension, and in Chrome or Safari the bookmark on the Get the extension page opens GradeSim with your AMIS grades.'
 		}
 	];
 </script>
@@ -44,49 +44,41 @@
 
 <div class="wrap">
 	<PageHead title="A GWA calculator and course planner for UPLB students">
-		Elbi GradeSim started as a browser extension that reads your grades from AMIS. The web app brings the same math to any
-		browser. It shows your GWA, what you need for Latin honors, and a term by term map to graduation.
+		GradeSim shows your GWA, what you need for Latin honors and a sem by sem plan to graduation.
 	</PageHead>
 
 	<figure class="shot">
 		<ThemedShot
 			name="planner"
-			alt="The planner showing the graduation term, the what-if controls and a first year with a failed MATH 27"
+			alt="The planner showing the graduation sem, the what-if controls and a first year with a failed MATH 27"
 			width={1440}
 			height={900}
 		/>
-		<figcaption>The planner maps every remaining course to the earliest term it can go, and shows what a failed course costs.</figcaption>
 	</figure>
 
 	<div class="prose">
 		<h2>What it does</h2>
 		<ul>
-			<li><strong>Grades.</strong> Your GWA, units and courses per term or per year, with University Scholar and College Scholar terms marked.</li>
-			<li><strong>What if.</strong> Pick a target and see the average you need on your remaining units, counting GE slots and free electives.</li>
-			<li><strong>Planner.</strong> Your checklist laid out by term, with prerequisite chains, critical courses, retakes, petitions, and an Excel export.</li>
-			<li><strong>Wrapped.</strong> A set of cards about your grades that you can save as an image.</li>
+			<li>Grades shows your GWA by sem or year and marks your scholar sems.</li>
+			<li>Target shows the average you need for the GWA you're aiming for.</li>
+			<li>Planner lays out your checklist sem by sem around prerequisites.</li>
+			<li>Wrapped makes cards about your grades to share.</li>
 		</ul>
-
-		<h2>Private by design</h2>
-		<p>
-			Everything runs in your browser. Your grades are saved in local storage on this device and are never uploaded. You can
-			export a backup at any time and clear everything with one button on the Grades tab.
-		</p>
 
 		<h2>Questions</h2>
 		{#each faq as item (item.q)}
-			<h3>{item.q}</h3>
-			<p>{item.a}</p>
+			<details name="faq">
+				<summary>{item.q}</summary>
+				<p>{item.a}</p>
+			</details>
 		{/each}
 
 		<h2>Credits</h2>
 		<p>
-			Elbi GradeSim is part of <a href="https://uplb.tools" rel="noopener" target="_blank">UPLB Tools</a>, the student-run group
-			behind <a href="https://room-tba.uplb.tools" rel="noopener" target="_blank">Room TBA</a> and other campus tools. The code is open source on
-			<a href="https://github.com/uplbtools/gradesim" rel="noopener" target="_blank">GitHub</a>, and curriculum fixes from
-			students are always welcome.
+			GradeSim is part of <a href="https://uplb.tools" rel="noopener" target="_blank">UPLB Tools</a>. The code is open source on
+			<a href="https://github.com/uplbtools/gradesim" rel="noopener" target="_blank">GitHub</a>.
 		</p>
-		<p><a class="btn btn-primary" href={resolve('/')}>Open Elbi GradeSim</a></p>
+		<p><a class="btn btn-primary" href={resolve('/')}>Open GradeSim</a></p>
 	</div>
 </div>
 
@@ -95,10 +87,27 @@
 		margin: 24px 0 8px;
 	}
 
-	figcaption {
-		margin-top: 8px;
-		font-size: 0.88rem;
-		color: var(--muted);
+	@media (max-width: 719px) {
+		.shot {
+			display: none;
+		}
+	}
+
+	details {
+		border-bottom: 1px solid var(--border);
+	}
+
+	summary {
+		margin-left: 18px;
+		list-style-position: outside;
+		cursor: pointer;
+		padding: 12px 0;
+		font-weight: 650;
+		color: var(--ink);
+	}
+
+	details p {
+		margin: 0 0 14px;
 	}
 
 	.prose .btn {

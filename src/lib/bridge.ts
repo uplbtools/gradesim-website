@@ -6,9 +6,10 @@
 // Firefox has no externally_connectable for web pages, so the extension runs a
 // small content script on this site that answers window.postMessage requests.
 //
-// Two requests: GRADESIM_PING only says whether grades exist (sent on load to
-// pick the right button), GRADESIM_GET_GRADES hands them over and is only sent
-// when the student clicks Import.
+// Two requests: GRADESIM_PING says whether grades exist and when the extension
+// last read AMIS (sent on load), GRADESIM_GET_GRADES hands them over. It's sent
+// when the student clicks Import, and on load once they have imported before
+// and the extension has read AMIS since.
 
 /** Store ids. Opera and Brave install from the Chrome Web Store, so they share its id. */
 export const EXTENSION_IDS = [
@@ -32,7 +33,7 @@ function viaRuntime(id: string, type: Request, timeout: number): Promise<unknown
 		try {
 			rt.sendMessage(id, { type }, (reply) => {
 				clearTimeout(timer);
-				void rt.lastError; // read it so Chrome does not log "unchecked lastError"
+				void rt.lastError; // read it so Chrome doesn't log "unchecked lastError"
 				resolve(reply ?? null);
 			});
 		} catch {
@@ -69,11 +70,11 @@ async function ask(type: Request, timeout: number): Promise<unknown> {
 	return replies.find((r) => r != null) ?? null;
 }
 
-/** 'found' when the extension has grades, 'empty' when it is installed without any, null when nothing answered. */
-export async function probeExtension(timeout = 800): Promise<'found' | 'empty' | null> {
-	const r = (await ask('GRADESIM_PING', timeout)) as { hasGrades?: boolean } | null;
+/** Whether the extension has grades and when it last read AMIS, or null when nothing answered. */
+export async function probeExtension(timeout = 800): Promise<{ hasGrades: boolean; fetchedAt: number | null } | null> {
+	const r = (await ask('GRADESIM_PING', timeout)) as { hasGrades?: boolean; fetchedAt?: unknown } | null;
 	if (!r) return null;
-	return r.hasGrades ? 'found' : 'empty';
+	return { hasGrades: !!r.hasGrades, fetchedAt: typeof r.fetchedAt === 'number' ? r.fetchedAt : null };
 }
 
 /** The extension's grades in the same shape as its JSON backup, or null. */

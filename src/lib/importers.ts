@@ -3,7 +3,7 @@
 
 import { UPLB_PROGRAMS } from './curriculum.ts';
 import { manualTermKey, valueId, type AmisGradeValue, type GradesData, type SemNo } from './grades.ts';
-import { checkPlan, type PlanFile } from './planner.ts';
+import { checkPlan, type PlanFile, type PlannerInput, type PlannerOptions } from './planner.ts';
 
 const isObj = (x: unknown): x is Record<string, unknown> => x != null && typeof x === 'object' && !Array.isArray(x);
 
@@ -20,6 +20,10 @@ export interface GradesPatch {
 	substitutions?: Record<string, string>;
 	removals?: Record<string, string>;
 	selectedSpecializations?: Record<string, string>;
+	/** When the extension last read AMIS, in ms. */
+	fetchedAt?: number;
+	track?: string;
+	plan?: Pick<PlannerInput, 'customCourseStatus' | 'plannerPins' | 'plannerPetitions'> & { plannerOptions: PlannerOptions };
 }
 
 /**
@@ -29,8 +33,8 @@ export interface GradesPatch {
  */
 export function parseBackup(obj: unknown): GradesPatch | string {
 	if (isGradesData(obj)) return { gradesData: obj };
-	if (!isObj(obj) || obj.source !== 'elbi-gradesim') return 'That file is not a GradeSim backup. Use Export JSON in the extension, or a plan saved from the planner.';
-	if (!isGradesData(obj.gradesData)) return 'That backup has no grades in it yet. Open AMIS with the extension installed, then export again.';
+	if (!isObj(obj) || obj.source !== 'elbi-gradesim') return "That file isn't a GradeSim backup, so nothing changed. Pick a file from Save backup, or a plan from Save plan.";
+	if (!isGradesData(obj.gradesData)) return 'That backup has no grades in it yet. Open AMIS with the extension installed, then save a new backup.';
 	const patch: GradesPatch = { gradesData: obj.gradesData };
 	if (typeof obj.selectedProgram === 'string' && UPLB_PROGRAMS[obj.selectedProgram]) patch.selectedProgram = obj.selectedProgram;
 	if (Array.isArray(obj.excludedCourses)) patch.excludedCourses = obj.excludedCourses.map(String);
@@ -43,6 +47,18 @@ export function parseBackup(obj: unknown): GradesPatch | string {
 	if (isObj(obj.selectedSpecializations) && Object.values(obj.selectedSpecializations).every((v) => typeof v === 'string')) {
 		patch.selectedSpecializations = obj.selectedSpecializations as Record<string, string>;
 	}
+	if (typeof obj.fetchedAt === 'number') patch.fetchedAt = obj.fetchedAt;
+	const track = isObj(obj.selectedTracks) && patch.selectedProgram ? obj.selectedTracks[patch.selectedProgram] : null;
+	if (typeof track === 'string') patch.track = track;
+	const plan = {
+		customCourseStatus: obj.customCourseStatus ?? {},
+		plannerPins: obj.plannerPins ?? {},
+		plannerPetitions: obj.plannerPetitions ?? {},
+		plannerOptions: obj.plannerOptions
+	};
+	if (patch.selectedProgram && !checkPlan({ source: 'elbi-gradesim-plan', version: 1, program: patch.selectedProgram, substitutions: {}, ...plan })) {
+		patch.plan = plan as GradesPatch['plan'];
+	}
 	return patch;
 }
 
@@ -54,7 +70,7 @@ export function parseImport(text: string): Imported {
 	try {
 		obj = JSON.parse(text);
 	} catch {
-		return { kind: 'error', message: 'That file is not valid JSON, so nothing was changed.' };
+		return { kind: 'error', message: "GradeSim can't read that file, so nothing changed. Pick the backup GradeSim saved." };
 	}
 	if (isObj(obj) && obj.source === 'elbi-gradesim-plan') {
 		const problem = checkPlan(obj);
@@ -72,6 +88,12 @@ export function makeBackup(s: {
 	substitutions: Record<string, string>;
 	removals?: Record<string, string>;
 	selectedSpecializations?: Record<string, string>;
+	fetchedAt?: number | null;
+	track?: string | null;
+	customCourseStatus?: PlannerInput['customCourseStatus'];
+	plannerPins?: PlannerInput['plannerPins'];
+	plannerPetitions?: PlannerInput['plannerPetitions'];
+	plannerOptions?: PlannerOptions | null;
 }) {
 	return {
 		source: 'elbi-gradesim',
@@ -81,6 +103,12 @@ export function makeBackup(s: {
 		substitutions: s.substitutions,
 		removals: s.removals ?? {},
 		selectedSpecializations: s.selectedSpecializations ?? {},
+		...(s.fetchedAt ? { fetchedAt: s.fetchedAt } : {}),
+		...(s.track ? { selectedTracks: { [s.selectedProgram]: s.track } } : {}),
+		customCourseStatus: s.customCourseStatus ?? {},
+		plannerPins: s.plannerPins ?? {},
+		plannerPetitions: s.plannerPetitions ?? {},
+		...(s.plannerOptions ? { plannerOptions: s.plannerOptions } : {}),
 		gradesData: s.gradesData
 	};
 }

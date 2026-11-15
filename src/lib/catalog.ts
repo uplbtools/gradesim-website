@@ -1,5 +1,5 @@
 // UPLB course catalog (offerings and requisites), generated in the extension repo
-// by scratch/build_catalog.mjs from AMIS class listings. Do not edit by hand.
+// by scratch/build_catalog.mjs from AMIS class listings. Don't edit by hand.
 import catalogJson from './data/catalog.json';
 import type { CatalogEntry } from './scheduler.ts';
 

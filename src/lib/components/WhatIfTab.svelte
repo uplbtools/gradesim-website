@@ -3,8 +3,9 @@
 	import { UPLB_CATALOG } from '#lib/catalog.ts';
 	import { detectTrack, getProgramDataQuality } from '#lib/curriculum.ts';
 	import { HONORS } from '#lib/grades.ts';
-	import { modelFor, planTrack } from '#lib/planner.ts';
+	import { modelFor, planTrack, unitsText } from '#lib/planner.ts';
 	import { amisCourses, gwaOutlook, remainingRequirements } from '#lib/requirements.ts';
+	import Icon from './Icon.svelte';
 	import Notice from './Notice.svelte';
 
 	// Counts come from requirements.ts, the same code the planner uses, so both show the same units left.
@@ -73,7 +74,7 @@
 				value: '3.00',
 				note: 'any passing grade',
 				tone: 'ok',
-				text: g.gwa > 0 && g.gwa <= target ? `You are at ${name} now. Pass every course left and you keep it.` : `Pass every course left and you reach ${name}.`,
+				text: g.gwa > 0 && g.gwa <= target ? `You're at ${name} now. Pass every course left and you keep it.` : `Pass every course left and you reach ${name}.`,
 				failure: null
 			} as const;
 		}
@@ -82,7 +83,7 @@
 		return {
 			label: 'Average you need',
 			value: r.toFixed(2),
-			note: `on your ${left.gwaUnits} GWA units left`,
+			note: `on your ${unitsText(left.gwaUnits)} left`,
 			tone: r <= 1.75 ? 'warn' : 'ok',
 			text: `${targetName} is in reach with ${how}.`,
 			failure: null
@@ -102,6 +103,7 @@
 
 	<section class="card" aria-labelledby="target-title">
 		<h2 id="target-title" class="h">What GWA are you aiming for?</h2>
+		{#if g.gwa > 0}<p class="muted small now">Your GWA is {g.gwa.toFixed(4)} now.</p>{/if}
 		<div class="targets" role="radiogroup" aria-labelledby="target-title">
 			{#each HONORS as h (h.key)}
 				<label class="target" class:on={choice === String(h.max)}>
@@ -131,7 +133,7 @@
 	<section class="card result" aria-live="polite" aria-labelledby="result-title">
 		<h2 id="result-title" class="h">What you need</h2>
 		{#if !left}
-			<Notice tone="info">GradeSim does not have the {app.program.name} checklist yet, so it cannot count your remaining units. Your GWA above still works.</Notice>
+			<Notice tone="info">GradeSim doesn't have the {app.program.name} checklist yet, so it can't count your remaining units. Your GWA on the Grades tab still works.</Notice>
 		{:else if !validTarget}
 			<p class="muted">Enter a target GWA from 1.00 to 5.00.</p>
 		{:else if answer}
@@ -149,35 +151,17 @@
 					{/if}
 				{/snippet}
 			</Notice>
-			<dl>
-				<div><dt>Current GWA</dt><dd>{g.gwa > 0 ? g.gwa.toFixed(4) : 'None yet'}</dd></div>
-				<div><dt>Target</dt><dd>{target.toFixed(2)} or better</dd></div>
-				<div><dt>GWA units so far</dt><dd>{g.totalUnits}</dd></div>
-				<div><dt>GWA units left</dt><dd>{left.gwaUnits}</dd></div>
-			</dl>
 		{/if}
 	</section>
 
-	{#if left}
-		<section class="card" aria-labelledby="rem-title">
-			<h2 id="rem-title" class="h">Left to take for {app.program.name}</h2>
-			<dl>
-				<div><dt>Courses</dt><dd>{left.left.length}</dd></div>
-				<div><dt>Units</dt><dd data-testid="units-left">{left.units}</dd></div>
-				<div><dt>GE courses done</dt><dd>{left.ge.done} of {left.ge.total}</dd></div>
-				{#if left.electives.totalUnits > 0}
-					<div><dt>Free elective units done</dt><dd>{left.electives.doneUnits} of {left.electives.totalUnits}</dd></div>
-				{/if}
-			</dl>
-			<a class="btn btn-secondary" href="#planner">See them in the planner</a>
-
+	{#if left && (tracks.length || specs.length)}
+		<section class="card" aria-label="Track and specialization">
 			{#if tracks.length}
 				<details class="track">
-					<summary>{app.program.tracks![(detected ?? track)!].name}{detected ? '' : ' (assumed)'}</summary>
+					<summary><Icon name="chevron" size={16} />{app.program.tracks![(detected ?? track)!].name}{detected ? '' : ' (assumed)'}</summary>
 					{#if detected}
-						<Notice tone="ok">Your grades show the {app.program.tracks![detected].name} ({app.program.tracks![detected].code}).</Notice>
+						<p class="muted small">Your grades show this track.</p>
 					{:else}
-						<Notice tone="warn">No SP or thesis course in your grades yet, so GradeSim assumes {app.program.tracks![track!].name} ({app.program.tracks![track!].code}). Pick yours below.</Notice>
 						<div class="tracks" role="radiogroup" aria-label="Track">
 							{#each tracks as [key, t] (key)}
 								<label class="check">
@@ -192,7 +176,7 @@
 
 			{#if specs.length}
 				<details class="track" open>
-					<summary>Specialization</summary>
+					<summary><Icon name="chevron" size={16} />Specialization</summary>
 					<label class="field">
 						Field of specialization
 						<select class="select" value={app.specialization ?? ''} onchange={(e) => app.setSpecialization(e.currentTarget.value)}>
@@ -245,6 +229,10 @@
 	.h {
 		font-size: 1.1rem;
 		margin-bottom: 10px;
+	}
+
+	.now {
+		margin: -6px 0 10px;
 	}
 
 	.targets {
@@ -312,7 +300,7 @@
 	}
 
 	.big .label {
-		font-size: 0.78rem;
+		font-size: 0.8125rem;
 		font-weight: 600;
 		color: var(--muted);
 	}
@@ -333,7 +321,7 @@
 	}
 
 	dt {
-		font-size: 0.78rem;
+		font-size: 0.8125rem;
 		color: var(--muted);
 		font-weight: 600;
 	}
@@ -349,15 +337,39 @@
 		font-size: 0.82rem;
 	}
 
-	.track {
+	.track + .track {
 		margin-top: 16px;
 	}
 
 	.track summary {
+		display: flex;
+		align-items: center;
+		gap: 10px;
+		min-height: 44px;
 		cursor: pointer;
-		padding: 8px 0;
+		list-style: none;
 		font-weight: 650;
 		color: var(--ink);
+	}
+
+	.track summary::-webkit-details-marker {
+		display: none;
+	}
+
+	.track summary > :global(.icon) {
+		color: var(--muted);
+		transform: rotate(-90deg);
+		transition: transform var(--transition-fast);
+	}
+
+	.track[open] summary > :global(.icon) {
+		transform: none;
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.track summary > :global(.icon) {
+			transition: none;
+		}
 	}
 
 	.pool {
@@ -395,7 +407,7 @@
 		}
 
 		.tmax {
-			font-size: 0.75rem;
+			font-size: 0.8125rem;
 		}
 
 		.custom {

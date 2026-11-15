@@ -71,10 +71,10 @@ test('excluding a course takes it out of the GWA and tallies it', () => {
 test('honors: Latin honors only, none with zero graded units', () => {
 	expect(honorFor(0, 0)).toBeNull();
 	expect(honorFor(1, 0)).toBeNull();
-	expect(honorFor(1.2, 30)?.name).toBe('Summa Cum Laude');
-	expect(honorFor(1.21, 30)?.name).toBe('Magna Cum Laude');
-	expect(honorFor(1.45, 30)?.name).toBe('Magna Cum Laude');
-	expect(honorFor(1.75, 30)?.name).toBe('Cum Laude');
+	expect(honorFor(1.2, 30)?.name).toBe('Summa cum laude');
+	expect(honorFor(1.21, 30)?.name).toBe('Magna cum laude');
+	expect(honorFor(1.45, 30)?.name).toBe('Magna cum laude');
+	expect(honorFor(1.75, 30)?.name).toBe('Cum laude');
 	expect(honorFor(2, 30)).toBeNull();
 });
 

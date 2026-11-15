@@ -10,14 +10,14 @@
 />
 
 <div class="wrap">
-	<PageHead title="Privacy policy">Last updated November 13, 2026</PageHead>
+	<PageHead title="Privacy policy">Last updated November 16, 2026</PageHead>
 
 	<article class="prose">
 		<h2>What Elbi GradeSim is</h2>
 		<p>
 			Elbi GradeSim is a free web app at gradesim.uplb.tools and a companion browser extension. Both help UPLB students compute
 			their GWA, simulate Latin honor targets and plan their remaining terms. They are open source projects maintained by
-			student volunteers under UPLB Tools, and they are not an official UPLB product.
+			student volunteers under UPLB Tools, and they aren't an official UPLB product.
 		</p>
 
 		<h2>Your grades stay in your browser</h2>
@@ -43,18 +43,19 @@
 		<h2>The extension</h2>
 		<p>
 			The extension reads the grades AMIS already shows you when you open it while logged in, and keeps them in the
-			extension’s storage on your device. It does not send your AMIS credentials, grades or GWA anywhere. It only runs on AMIS
+			extension’s storage on your device. It doesn't send your AMIS credentials, grades or GWA anywhere. It only runs on AMIS
 			pages and, so that it can hand your grades to this web app when you ask, on gradesim.uplb.tools.
 		</p>
 		<p>
-			When you choose Import from the GradeSim extension, the extension passes your grades directly to this page inside your
-			browser. They do not travel over the network.
+			When you choose Import from the extension, or open this page from the extension, it passes your grades directly to this page inside your
+			browser. After that, this page asks the extension for newer grades each time you open it. They don't travel over the
+			network.
 		</p>
 
 		<h2>Hosting</h2>
 		<p>
 			The site is hosted on Vercel and reaches you through Cloudflare, which sits in front of it as a proxy and cache. Both
-			may log standard request details such as IP address, browser and time of visit for security and delivery. Those logs never contain your grades, because your grades are not
+			may log standard request details such as IP address, browser and time of visit for security and delivery. Those logs never contain your grades, because your grades aren't
 			sent with any request. After the first visit the app can run offline from your browser’s cache.
 		</p>
 
@@ -71,7 +72,7 @@
 		</p>
 
 		<h2>Children</h2>
-		<p>Elbi GradeSim is meant for UPLB students and is not directed at children under 13.</p>
+		<p>Elbi GradeSim is meant for UPLB students and isn't directed at children under 13.</p>
 
 		<h2>Changes</h2>
 		<p>We will update this policy if the app or the extension changes how data is handled. The date above shows the latest revision.</p>

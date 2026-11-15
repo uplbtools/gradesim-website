@@ -6,18 +6,13 @@
 	<div class="wrap">
 		<nav aria-label="Footer">
 			<a href={resolve('about/')}>About</a>
-			<a href={resolve('curricula/')}>Curricula</a>
-			<a href={resolve('install/')}>Install the extension</a>
+			<a href={resolve('curricula/')}>Checklists</a>
+			<a href={resolve('install/')}>Get the extension</a>
 			<a href={resolve('privacy/')}>Privacy</a>
 			<a href={resolve('terms/')}>Terms</a>
 			<a href="https://github.com/uplbtools/gradesim" rel="noopener" target="_blank">GitHub</a>
-			<a href="https://room-tba.uplb.tools" rel="noopener" target="_blank">Room TBA</a>
-			<a href="https://uplb.tools" rel="noopener" target="_blank">UPLB Tools</a>
 		</nav>
-		<p>
-			Elbi GradeSim is a student-run project under <a href="https://uplb.tools" rel="noopener" target="_blank">UPLB Tools</a>. It is not an
-			official UPLB website, and your grades never leave your browser.
-		</p>
+		<p>A student project by <a href="https://uplb.tools" rel="noopener" target="_blank">UPLB Tools</a>. It isn't an official UPLB website.</p>
 	</div>
 </footer>
 

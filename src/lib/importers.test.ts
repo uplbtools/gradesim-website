@@ -33,9 +33,23 @@ test('round-trips its own backup', () => {
 	});
 });
 
+test('a backup carries the track, the plan and when AMIS was read', () => {
+	const plan = {
+		customCourseStatus: { 'CMSC 21': 'failed' as const },
+		plannerPins: { 'CMSC 22': 4 },
+		plannerPetitions: { 'CMSC 123': true as const },
+		plannerOptions: { cap: 21, midyear: true, midyear9: false }
+	};
+	const file = makeBackup({ gradesData: backup.gradesData as GradesData, selectedProgram: 'BSCS', excludedCourses: [], substitutions: {}, fetchedAt: 1700000000000, track: 'thesis', ...plan });
+	expect(parseImport(JSON.stringify(file))).toMatchObject({ kind: 'grades', patch: { fetchedAt: 1700000000000, track: 'thesis', plan } });
+	// The extension has no planner options until its planner is opened.
+	const bare = parseImport(JSON.stringify({ source: 'elbi-gradesim', selectedProgram: 'BSCS', gradesData: backup.gradesData, plannerPins: { 'CMSC 22': 4 } }));
+	expect(bare.kind === 'grades' && bare.patch.plan).toBeUndefined();
+});
+
 test('rejects junk with a readable reason', () => {
 	expect(parseImport('not json')).toMatchObject({ kind: 'error' });
-	expect(parseImport('{"hello":1}')).toMatchObject({ kind: 'error', message: expect.stringContaining('not a GradeSim backup') });
+	expect(parseImport('{"hello":1}')).toMatchObject({ kind: 'error', message: expect.stringContaining("isn't a GradeSim backup") });
 	expect(parseImport('{"source":"elbi-gradesim","gradesData":null}')).toMatchObject({ kind: 'error', message: expect.stringContaining('no grades') });
 	expect(parseImport('{"student_grades":{"1251":{"values":"x"}}}')).toMatchObject({ kind: 'error' });
 });
@@ -52,7 +66,7 @@ test('reads a saved plan and refuses a damaged one', () => {
 	});
 	expect(parseImport(JSON.stringify(plan))).toMatchObject({ kind: 'plan', plan: { program: 'BSCS' } });
 	expect(parseImport(JSON.stringify({ ...plan, plannerOptions: { cap: 30 } }))).toMatchObject({ kind: 'error', message: expect.stringContaining('damaged') });
-	expect(parseImport(JSON.stringify({ ...plan, program: 'NOPE' }))).toMatchObject({ kind: 'error', message: expect.stringContaining('NOPE') });
+	expect(parseImport(JSON.stringify({ ...plan, program: 'NOPE' }))).toMatchObject({ kind: 'error', message: expect.stringContaining("doesn't have yet") });
 	expect(parseImport(JSON.stringify({ ...plan, version: 2 }))).toMatchObject({ kind: 'error', message: expect.stringContaining('newer') });
 });
 

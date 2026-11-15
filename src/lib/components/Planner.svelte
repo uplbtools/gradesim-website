@@ -1,10 +1,12 @@
 <script lang="ts">
-	import { onMount, tick } from 'svelte';
+	import { tick } from 'svelte';
+	import { resolve } from '$app/paths';
 	import { app, download } from '#lib/app.svelte.ts';
-	import { groupGWA, termKeyToAbs } from '#lib/grades.ts';
+	import { formatGrade, groupGWA, substituteOptions, termKeyToAbs } from '#lib/grades.ts';
 	import { parseImport } from '#lib/importers.ts';
+	import { packLink } from '#lib/link.ts';
 	import { UPLB_CATALOG } from '#lib/catalog.ts';
-	import { getProgramDataQuality, UPLB_PROGRAMS } from '#lib/curriculum.ts';
+	import { getProgramDataQuality, isNonGwaCourseCode, UPLB_PROGRAMS } from '#lib/curriculum.ts';
 	import {
 		absLabel,
 		buildColumns,
@@ -14,10 +16,13 @@
 		DEFAULT_PLANNER_OPTIONS,
 		exportModel,
 		makePlanFile,
+		markConflict,
 		modelFor,
 		offeringLabel,
+		optionEffect,
 		planTrack,
 		restricted,
+		roomTbaLink,
 		STATUS,
 		summary,
 		termsLate,
@@ -28,10 +33,9 @@
 		type Card,
 		type Column,
 		type PlannerInput,
-		type WhatIfMode
 	} from '#lib/planner.ts';
 	import { fixIssue, fixText, type ChecklistFix } from '#lib/fix.ts';
-	import { preGroups } from '#lib/scheduler.ts';
+	import { preGroups, type PlanCourse } from '#lib/scheduler.ts';
 	import { buildPlannerSheets, writeXlsx } from '#lib/xlsx.ts';
 	import FixForm from './FixForm.svelte';
 	import Icon, { type IconName } from './Icon.svelte';
@@ -49,24 +53,15 @@
 		plannerPins: app.s.plannerPins,
 		plannerPetitions: app.s.plannerPetitions,
 		plannerOptions: options,
-		whatif: app.whatif
+		whatif: app.whatif,
+		startAbs: app.shared ?? undefined
 	});
 	const view = $derived(model ? compute(model, input) : null);
 	const layout = $derived(view ? buildColumns(view) : null);
 	const sum = $derived(view ? summary(view) : null);
-	const whatifCodes = $derived.by(() => {
-		if (!view) return [];
-		const codes = Object.keys(view.now.result.assignedTerm).sort();
-		if (app.whatif && !codes.includes(app.whatif.code)) codes.push(app.whatif.code);
-		return codes;
-	});
-
 	let selected = $state<string | null>(null);
 	let status = $state('');
 	let notice = $state<{ text: string; bad: boolean } | null>(null);
-	let wiMode = $state<WhatIfMode>(app.whatif?.mode ?? 'fail');
-	let wiCode = $state(app.whatif?.code ?? '');
-	let wiResult = $state('');
 	let menu: HTMLDetailsElement | undefined = $state();
 	let planInput: HTMLInputElement | undefined = $state();
 	let sheetEl: HTMLDivElement | undefined = $state();
@@ -106,9 +101,7 @@
 		return new Set([selected, ...model.graph.ancestors(selected), ...model.graph.descendants(selected)]);
 	});
 
-	onMount(() => {
-		if (app.whatif && view) wiResult = whatIfMessage(view);
-	});
+	const wiResult = $derived(app.whatif && view ? whatIfMessage(view) : '');
 
 	// Academic years, each with its terms. Named courses come first, then the GE, HK, NSTP and elective slots.
 	const years = $derived.by(() => {
@@ -132,12 +125,23 @@
 		});
 		return out;
 	});
+	const isDone = (t: (typeof years)[number]['terms'][number]) => t.f.isPast && t.f.tag !== 'Now';
+	const split = (done: boolean) => years.map((y) => ({ ...y, terms: y.terms.filter((t) => isDone(t) === done) })).filter((y) => y.terms.length);
+	const ahead = $derived(split(false));
+	const past = $derived(split(true));
+	const spare = $derived(view?.now.result.spare ?? []);
+	const pastLine = $derived.by(() => {
+		const terms = past.flatMap((y) => y.terms);
+		const dated = terms.filter((t) => t.sem !== undefined);
+		const mids = dated.filter((t) => t.sem === 2).length;
+		const units = terms.reduce((n, t) => n + t.cards.filter((c) => c.status === 'passed' && !isNonGwaCourseCode(c.code)).reduce((u, c) => u + (Number(model?.byCode.get(c.code)?.units) || 0), 0), 0);
+		return `${termsText(dated.length - mids)}${mids ? ` and ${mids} midyear${mids === 1 ? '' : 's'}` : ''} done, ${unitsText(units)} passed`;
+	});
 
 	async function focusCard(code: string) {
 		await tick();
 		const el = sheetEl?.querySelector<HTMLElement>(`.pl-row[data-primary][data-code="${CSS.escape(code)}"]`);
-		const term = el?.closest('details');
-		if (term) term.open = true;
+		for (let d = el?.closest('details'); d; d = d.parentElement?.closest('details')) d.open = true;
 		el?.scrollIntoView({ block: 'nearest' });
 		el?.focus({ preventScroll: true });
 	}
@@ -154,6 +158,33 @@
 
 	function setOptions(patch: Partial<typeof options>) {
 		app.s.plannerOptions = { ...options, ...patch };
+	}
+
+	let menuOpen = $state(false);
+	const CAPS = [[18, '18 units'], [21, '21 units'], ['checklist', "the checklist's load"]] as const;
+	const effects = $derived.by(() => {
+		if (!menuOpen || !view) return null;
+		const v = view;
+		const caps = CAPS.filter(([cap]) => cap !== options.cap)
+			.map(([cap, label]) => [label, optionEffect(v, { cap })] as const)
+			.filter(([, text]) => text.startsWith("you'd"))
+			.map(([label, text]) => `With ${label}, ${text}`);
+		return {
+			cap: caps.join(' ') || 'Your graduation sem is the same at any load.',
+			midyear: optionEffect(v, { midyear: !options.midyear }),
+			midyear9: optionEffect(v, { midyear9: !options.midyear9 })
+		};
+	});
+	const petitions = $derived(Object.keys(app.s.plannerPetitions));
+	const subOptions = $derived(substituteOptions(app.program, app.gwa.completedCourses, app.s.substitutions));
+
+	function credit(code: string, taken: string) {
+		const next = { ...app.s.substitutions };
+		if (taken) next[code] = taken;
+		else delete next[code];
+		app.s.substitutions = next;
+		acted = code;
+		focusCard(code);
 	}
 
 	function act(name: 'passed' | 'failed' | 'clear' | 'later' | 'unpin', code: string) {
@@ -187,22 +218,8 @@
 		app.s.plannerPetitions = next;
 	}
 
-	function simulate(e: SubmitEvent) {
-		e.preventDefault();
-		if (!wiCode) {
-			wiResult = 'Pick a course first.';
-			return;
-		}
-		app.whatif = { code: wiCode, mode: wiMode };
-		selected = wiCode;
-		tick().then(() => {
-			if (view) wiResult = whatIfMessage(view);
-		});
-	}
-
 	function clearWhatif() {
 		app.whatif = null;
-		wiResult = '';
 	}
 
 	function closeMenu() {
@@ -235,7 +252,7 @@
 		closeMenu();
 		const r = parseImport(await file.text());
 		if (r.kind !== 'plan') {
-			notice = { text: r.kind === 'error' ? r.message : 'That file has grades, not a plan. Import it from the Grades tab.', bad: true };
+			notice = { text: r.kind === 'error' ? r.message : 'That file has grades, not a plan. Load it from the Grades tab.', bad: true };
 			return;
 		}
 		if (r.plan.program !== app.s.selectedProgram) {
@@ -243,12 +260,28 @@
 			if (!confirm(`This plan is for ${name}. Switch to ${name} and load it? Your current marks and moves are replaced.`)) return;
 		}
 		app.applyPlan(r.plan);
-		wiMode = r.plan.whatif?.mode ?? 'fail';
-		wiCode = r.plan.whatif?.code ?? '';
-		await tick();
-		wiResult = view && app.whatif ? whatIfMessage(view) : '';
 		const saved = new Date(r.plan.savedAt);
 		notice = { text: `Loaded the plan saved ${Number.isNaN(saved.getTime()) ? 'earlier' : saved.toLocaleDateString('en-CA')}.`, bad: false };
+	}
+
+	async function copyPlanLink() {
+		closeMenu();
+		if (!view || !model) return;
+		const marks = { ...input.customCourseStatus };
+		view.passed.forEach((code) => {
+			if (model.byCode.has(code)) marks[code] = 'passed';
+		});
+		const plan = {
+			...makePlanFile(model.code, { ...input, customCourseStatus: marks, substitutions: {} }),
+			track: model.track,
+			specialization: model.specialization,
+			startAbs: view.startAbs
+		};
+		const url = await packLink(plan, location.origin + resolve('/'));
+		notice = await navigator.clipboard.writeText(url).then(
+			() => ({ text: 'The link is copied. It holds your plan and the courses you passed, with no grades.', bad: false }),
+			() => ({ text: 'Your browser blocked the copy. Save the plan as a file and send that.', bad: true })
+		);
 	}
 
 	function printPlan() {
@@ -291,12 +324,13 @@
 		{@const card = layout?.primary[code]}
 		{@const t = view.now.result.assignedTerm[code]}
 		{@const slip = c.genericRequirement === 'elective' && view.slips[code] > 0 ? undefined : view.slips[code]}
-		{@const blocking = model.graph.blocking[code] || 0}
-		{@const delay = model.graph.delay[code] || 1}
 		{@const deps = model.graph.edges.filter((e) => e.from === code).map((e) => e.to)}
 		{@const past = i.tries.length > 0}
 		{@const fix = app.fixes.find((f) => f.code === code)}
-		{@const off = c.offered as Record<number, number> | null | undefined}
+		{@const offer = offeringLabel(c)}
+		{@const canCredit = !c.genericRequirement && (app.s.substitutions[code] || (i.status !== 'passed' && subOptions.length))}
+		{@const passBlock = i.status !== 'passed' && markConflict(view, code, 'passed')}
+		{@const failBlock = i.status !== 'failed' && markConflict(view, code, 'failed')}
 		<aside class="pl-detail" aria-label="Details for {code}">
 			<div class="pl-detail-head">
 				<div>
@@ -305,21 +339,17 @@
 				</div>
 				<button type="button" class="pl-close" aria-label="Close details" onclick={() => select(code)}><Icon name="x" /></button>
 			</div>
-			<p class="pl-muted">
-				{`${unitsText(c.units)}, offered ${offeringLabel(c).toLowerCase()}${off && !c.fixed ? ` (${off[1] ?? 0} of 4 first sems, ${off[2] ?? 0} of 3 second sems, ${off[3] ?? 0} of 2 midyears seen)` : ''}.${t !== undefined ? ` Planned for ${absLabel(view.startAbs + t)}.` : ''}`}
-			</p>
-			{#if blocking || delay > 1 || slip !== undefined}
-				<ul class="pl-metrics">
-					{#if blocking}<li><strong>{blocking}</strong> {blocking === 1 ? 'course' : 'courses'} blocked if this is failed</li>{/if}
-					{#if delay > 1}<li><strong>{delay}</strong> courses on the longest chain through it</li>{/if}
-					{#if slip !== undefined}
-						{#if slip > 0}
-							<li class="bad"><strong>Critical.</strong> Taking it a term later delays graduation by {slip === Infinity ? 'more than the plan can show' : termsText(termsLate(view, view.now.result.gradTermIndex, view.now.result.gradTermIndex + slip))}.</li>
-						{:else}
-							<li>Has slack. Taking it a term later does not move graduation.</li>
-						{/if}
+			{#if restricted(c) && i.status !== 'passed'}
+				<p class="pl-muted">{offer === 'Not offered lately' ? "AMIS hasn't offered this lately." : `Offered ${offer.toLowerCase().replace('only', 'sem only')}.`}</p>
+			{/if}
+			{#if i.status !== 'passed' && slip !== undefined}
+				<p class="pl-fact" class:bad={slip > 0}>
+					{#if slip > 0}
+						<strong>Take this on time.</strong> A sem later moves your graduation by {slip === Infinity ? 'more than the plan can show' : termsText(termsLate(view, view.now.result.gradTermIndex, view.now.result.gradTermIndex + slip))}.
+					{:else}
+						You can take this a sem later and still graduate on time.
 					{/if}
-				</ul>
+				</p>
 			{/if}
 			{#if c.options}
 				<h4>Take one of these</h4>
@@ -329,8 +359,8 @@
 					{/each}
 				</ul>
 			{/if}
-			<h4>Requires</h4>
 			{#if preGroups(c).length || c.co?.length || c.standing || c.coi || c.note}
+				<h4>Requires</h4>
 				<ul class="pl-reqs">
 					{#each preGroups(c) as g, gi (gi)}
 						<li>{@render group(g)}</li>
@@ -338,43 +368,63 @@
 					{#each c.co || [] as x (x)}
 						<li>Take with {@render group([x])} (corequisite)</li>
 					{/each}
-					{#if c.standing}<li>{c.standing === 'senior' ? 'Senior' : 'Junior'} standing (assumed {c.standing === 'senior' ? '75' : '50'}% of total units)</li>{/if}
+					{#if c.standing}<li>This needs {c.standing} standing, which GradeSim counts as {c.standing === 'senior' ? '75' : '50'}% of your units.</li>{/if}
 					{#if c.coi}<li>Consent of instructor (COI) also works</li>{/if}
 					{#if c.note}<li class="pl-muted">AMIS says {c.note}</li>{/if}
 				</ul>
-			{:else}
-				<p class="pl-muted">No prerequisites.</p>
 			{/if}
 			{#if deps.length}
 				<h4>Unlocks</h4>
 				<p class="pl-deps">{#each deps as d (d)}{@render group([d])}{/each}</p>
 			{/if}
 			<div class="pl-actions">
-				{#if i.status !== 'passed'}<button type="button" class="btn btn-secondary" onclick={() => act('passed', code)}><Icon name="check" />Mark passed</button>{/if}
-				{#if i.status !== 'failed'}<button type="button" class="btn btn-secondary" onclick={() => act('failed', code)}><Icon name="x" />{past || i.status === 'inprogress' ? 'Mark failed' : 'Mark failed (what-if)'}</button>{/if}
+				{#if i.status !== 'passed' && !passBlock}<button type="button" class="btn btn-secondary" onclick={() => act('passed', code)}><Icon name="check" />Mark passed</button>{/if}
+				{#if i.status !== 'failed' && !failBlock}<button type="button" class="btn btn-secondary" onclick={() => act('failed', code)}><Icon name="x" />{past || i.status === 'inprogress' ? 'Mark failed' : 'Mark failed (what-if)'}</button>{/if}
 				{#if i.override}<button type="button" class="textbtn" onclick={() => act('clear', code)}>Use {past ? 'my grades' : 'the plan'} again</button>{/if}
-				{#if t !== undefined}<button type="button" class="textbtn" onclick={() => act('later', code)}>Take a term later</button>{/if}
+				{#if t !== undefined}<button type="button" class="textbtn" onclick={() => act('later', code)}>Can't get a slot</button>{/if}
 				{#if app.s.plannerPins[code] != null}<button type="button" class="textbtn" onclick={() => act('unpin', code)}>Back to earliest</button>{/if}
 			</div>
+			{#if failBlock}<p class="pl-muted">{failBlock.code} is passed, so {code} can't be marked failed.</p>{/if}
+			{#if passBlock}<p class="pl-muted">{passBlock.pre} is failed, so {code} can't be marked passed.</p>{/if}
 			{#if acted === code && sum}<p><strong>{sum.headline}.{sum.deltaText ? ` ${sum.deltaText}.` : ''}</strong></p>{/if}
 			{#if restricted(c) && i.status !== 'passed'}
 				<label class="pl-petition">
 					<input type="checkbox" checked={!!app.s.plannerPetitions[code]} onchange={(e) => togglePetition(code, e.currentTarget.checked)} />
-					<span>Plan on a petitioned class when it is not offered. It needs about 10 students and department, college and OVCAA approval, so treat it as conditional.</span>
+					<span>Plan on a petition<small>A petition needs about 10 students and approval from the department, the college and OVCAA.</small></span>
 				</label>
 			{/if}
-			{#if fixing === code}
-				<FixForm course={c} onsave={saveFix} oncancel={() => (fixing = null)} />
-			{:else if fix}
-				<p class="pl-muted">
-					Your fix is in your plan{fix.sent ? ' and was sent' : ''}.
-					{#if !fix.sent}<button type="button" class="textbtn" onclick={sendFixes}>Send to UPLB Tools</button>{/if}
-					<button type="button" class="textbtn" onclick={() => (fixing = code)}>Change it</button>
-				</p>
+			{#if canCredit}
+				<details class="pl-more" open={fixing === code || !!fix || !!app.s.substitutions[code]}>
+					<summary><Icon name="chevron" size={16} />Credit or fix this course</summary>
+					<label class="field pl-credit">
+						Credit a course you passed
+						<select class="select" value={app.s.substitutions[code] ?? ''} onchange={(e) => credit(code, e.currentTarget.value)}>
+							<option value="">None</option>
+							{#if app.s.substitutions[code]}<option value={app.s.substitutions[code]}>{app.s.substitutions[code]}</option>{/if}
+							{#each subOptions as o (o.code)}<option value={o.code.toUpperCase().trim()}>{o.code}, {unitsText(o.units)}, {formatGrade(String(o.grade))}</option>{/each}
+						</select>
+						<small>It counts as {code} in your plan and on the Grades tab.</small>
+					</label>
+					{@render fixLine(c, fix)}
+				</details>
 			{:else if !c.genericRequirement}
-				<p class="pl-muted">Is something wrong here? <button type="button" class="textbtn" onclick={() => (fixing = code)}>Fix this course</button></p>
+				{@render fixLine(c, fix)}
 			{/if}
 		</aside>
+	{/if}
+{/snippet}
+
+{#snippet fixLine(c: PlanCourse, fix: ChecklistFix | undefined)}
+	{#if fixing === c.code}
+		<FixForm course={c} onsave={saveFix} oncancel={() => (fixing = null)} />
+	{:else if fix}
+		<p class="pl-muted">
+			Your fix is in your plan{fix.sent ? ' and was sent' : ''}.
+			{#if !fix.sent}<button type="button" class="textbtn" onclick={sendFixes}>Send to UPLB Tools</button>{/if}
+			<button type="button" class="textbtn" onclick={() => (fixing = c.code)}>Change it</button>
+		</p>
+	{:else}
+		<p class="pl-fixline"><button type="button" class="textbtn" onclick={() => (fixing = c.code)}>Fix this course</button></p>
 	{/if}
 {/snippet}
 
@@ -391,8 +441,94 @@
 	{/each}
 {/snippet}
 
+{#snippet yearList(list: typeof years)}
+	{#if view && layout && model}
+	{#each list as year (year.label)}
+		<section class="pl-year" aria-label={year.label}>
+			<h3>{year.label}</h3>
+			{#each year.terms as term (term.column.abs)}
+						{@const f = term.f}
+						<details class="pl-term" class:past={f.isPast} data-sem={term.sem} open={!f.isPast || f.tag === 'Now' || term.failed > 0}>
+							<summary>
+								<Icon name="chevron" size={16} />
+								<span class="pl-term-name">{term.name}</span>
+								{#if f.tag === 'Next' || f.tag === 'Now'}<span class="pl-term-tag">{f.tag === 'Next' ? 'next' : 'now'}</span>{/if}
+								<span class="pl-term-facts">
+									{#if term.failed}<span class="bad">{term.failed} failed</span>{/if}
+									{#if term.gwa}<span>GWA {term.gwa.toFixed(4)}</span>{/if}
+									{#if f.future && !f.isMid && f.units > 18}<span class="warn">heavy</span>{/if}
+									<span class:warn={f.loud}>{#if f.loud}<Icon name="alert" size={13} />{/if}{f.cap ? `${f.units} of ${f.cap} units` : unitsText(f.units)}</span>
+								</span>
+							</summary>
+							{#if f.warn}<p class="pl-term-warn">{f.warn}</p>{/if}
+							<ul class="pl-rows" class:nograde={!term.cards.some((c) => c.grade)}>
+								{#each term.cards as card (card)}
+									{@const c = model.byCode.get(card.code)!}
+									{@const facts = cardFacts(card, view)}
+									{@const isPrimary = layout.primary[card.code] === card}
+									{@const word = card.status === 'passed' || card.status === 'planned' || card.status === 'ready' ? '' : facts.statusLabel}
+									<li>
+										<button
+											type="button"
+											class="pl-row st-{card.status}"
+											class:history={card.history || card.hypothetical}
+											class:generic={!!c.genericRequirement}
+											class:chain={chain?.has(card.code) && !(selected === card.code && isPrimary)}
+											class:dim={chain && !chain.has(card.code)}
+											data-code={card.code}
+											data-primary={isPrimary ? '1' : undefined}
+											aria-pressed={selected === card.code && isPrimary}
+											aria-label="{c.code}, {c.title}. {facts.statusLabel}{facts.crit ? ', take on time' : ''}. {unitsText(Number(c.units) || 0)}{card.grade ? `, grade ${card.grade}` : ''}.{card.waitingOn ? ` Waiting on ${card.waitingOn}.` : ''}"
+											onclick={() => select(card.code)}
+										>
+											<span class="pl-mark"><Icon name={STATUS[card.status][0] as IconName} size={16} /></span>
+											<span class="pl-code">{c.code}</span>
+											<span class="pl-title">{c.title}</span>
+											<span class="pl-row-note" class:warn={facts.note?.warn}>
+												{[facts.note?.text ?? word, card.pinned ? 'Moved by you' : '', facts.crit ? 'Take on time' : ''].filter(Boolean).join(', ')}
+											</span>
+											<span class="pl-row-units">{c.units}</span>
+											<span class="pl-row-grade">{card.grade ?? ''}</span>
+										</button>
+										{#if isPrimary && selected === card.code}{@render detail(card.code)}{/if}
+									</li>
+								{:else}
+									<li class="pl-empty">Nothing offered that fits</li>
+								{/each}
+							</ul>
+							{#if f.tag === 'Next' || f.tag === 'Now'}
+								{@const codes = term.cards.filter((c) => !model.byCode.get(c.code)?.genericRequirement && c.status !== 'passed' && c.status !== 'failed').map((c) => c.code)}
+								{#if codes.length}<a class="textbtn pl-roomtba" href={roomTbaLink(term.column.abs, codes)} target="_blank" rel="noopener">Plan sections in Room TBA <Icon name="external" size={14} /></a>{/if}
+							{/if}
+							{#if f.tag === 'Next' && spare.length}
+								<details class="pl-term pl-also">
+									<summary><Icon name="chevron" size={16} />You can also take {spare.length} other course{spare.length === 1 ? '' : 's'}</summary>
+									<p class="pl-muted">Their prerequisites are done, so swap one in if a section is full.</p>
+									<ul class="pl-rows nograde">
+										{#each spare as code (code)}
+											{@const c = model.byCode.get(code)!}
+											<li>
+												<button type="button" class="pl-row" class:generic={!!c.genericRequirement} data-also={code} onclick={() => goto(code)}>
+													<span class="pl-mark"><Icon name="ready" size={16} /></span>
+													<span class="pl-code">{c.code}</span>
+													<span class="pl-title">{c.title}</span>
+													<span class="pl-row-note">Planned for {absLabel(view.startAbs + view.now.result.assignedTerm[code])}</span>
+													<span class="pl-row-units">{c.units}</span>
+												</button>
+											</li>
+										{/each}
+									</ul>
+								</details>
+							{/if}
+						</details>
+			{/each}
+		</section>
+	{/each}
+	{/if}
+{/snippet}
+
 {#if !view || !layout || !sum || !model}
-	<Notice>The planner does not have a checklist for this program yet.</Notice>
+	<Notice>The planner doesn't have a checklist for this program yet.</Notice>
 {:else}
 	<div class="planner">
 		{#if notice}
@@ -420,7 +556,7 @@
 					{#each view.conflicts as c (c.code + c.pre)}
 						<li class="bad">
 							<Icon name="alert" size={16} />
-							<span><strong>{c.code}</strong> is passed, so its prerequisite {c.pre} cannot be failed. Check the mark on {c.pre}.</span>
+							<span><strong>{c.code}</strong> is passed, so its prerequisite {c.pre} can't be failed. Check the mark on {c.pre}.</span>
 						</li>
 					{/each}
 				</ul>
@@ -428,31 +564,8 @@
 		</section>
 
 		<section class="pl-controls">
-			<form class="pl-whatif" onsubmit={simulate}>
-				<span class="pl-whatif-lead" id="wi-lead">What if I</span>
-				<select class="select" bind:value={wiMode} aria-label="Scenario">
-					<option value="fail">fail</option>
-					<option value="1">take a term later</option>
-					<option value="3">take a year later</option>
-				</select>
-				<select class="select" bind:value={wiCode} aria-label="Course">
-					<option value="">pick a course</option>
-					{#each whatifCodes as c (c)}<option value={c}>{c}</option>{/each}
-				</select>
-				<button class="btn btn-primary" type="submit">Simulate</button>
-				{#if app.whatif}<button class="textbtn" type="button" onclick={clearWhatif}>Clear</button>{/if}
-			</form>
-			<details class="pl-tips">
-				<summary><Icon name="info" size={16} />Tips</summary>
-				<div class="pl-tips-pop">
-					<p>Each block is a term. Past terms come from your grades. Future terms are the earliest plan that respects prerequisites, the sems each course is actually offered, and your unit cap.</p>
-					<p>Select a course to see what it requires, what it unlocks and how many courses a failure would block. Mark a course failed to see the retake and the delay.</p>
-					<p>A course marked Critical delays graduation if it slips by one term.</p>
-					<p>Offerings come from AMIS class listings for 2023 to 2026. Free electives are not included.</p>
-				</div>
-			</details>
-			<details class="pl-menu" bind:this={menu}>
-				<summary class="btn btn-secondary">Plan options<Icon name="chevron" /></summary>
+			<details class="pl-menu" bind:this={menu} ontoggle={(e) => (menuOpen = e.currentTarget.open)}>
+				<summary class="btn btn-secondary">Plan settings<Icon name="chevron" /></summary>
 				<div class="pl-menu-pop">
 					<button type="button" class="pl-menu-item" onclick={autoPlan}>Auto-plan again<small>Drops courses you pushed later</small></button>
 					<label class="pl-menu-item">
@@ -462,6 +575,17 @@
 							<option value="21">21 units (with lab courses)</option>
 							<option value="checklist">The checklist's load</option>
 						</select>
+						{#if effects}<small>{effects.cap}</small>{/if}
+					</label>
+					<label class="pl-menu-item">
+						Min load per sem
+						<select class="select" value={String(options.minLoad || 0)} onchange={(e) => setOptions({ minLoad: Number(e.currentTarget.value) })}>
+							<option value="0">No minimum</option>
+							<option value="12">12 units</option>
+							<option value="15">15 units</option>
+							<option value="18">18 units</option>
+						</select>
+						<small>GradeSim marks a sem under this, for a scholarship that needs a full load.</small>
 					</label>
 					{#if app.program.specializations}
 						<label class="pl-menu-item">
@@ -474,12 +598,16 @@
 							</select>
 						</label>
 					{/if}
-					<label class="pl-menu-item pl-check"><input type="checkbox" checked={options.midyear} onchange={(e) => setOptions({ midyear: e.currentTarget.checked })} /> Take classes in midyear</label>
-					<label class="pl-menu-item pl-check"><input type="checkbox" checked={options.midyear9} onchange={(e) => setOptions({ midyear9: e.currentTarget.checked })} /> Midyear up to 9 units (Dean's approval)</label>
-					<button type="button" class="pl-menu-item" onclick={savePlan}>Save plan<small>Download your marks, moves and options as a file</small></button>
+					<label class="pl-menu-item pl-check"><input type="checkbox" checked={options.midyear} onchange={(e) => setOptions({ midyear: e.currentTarget.checked })} /> <span>Take classes in midyear{#if effects}<small>With this {options.midyear ? 'off' : 'on'}, {effects.midyear}</small>{/if}</span></label>
+					<label class="pl-menu-item pl-check"><input type="checkbox" checked={options.midyear9} onchange={(e) => setOptions({ midyear9: e.currentTarget.checked })} /> <span>Midyear up to 9 units (Dean's approval){#if effects && options.midyear}<small>With this {options.midyear9 ? 'off' : 'on'}, {effects.midyear9}</small>{/if}</span></label>
+					{#if petitions.length}
+						<button type="button" class="pl-menu-item" onclick={() => (app.s.plannerPetitions = {})}>Clear petitions<small>{petitions.join(', ')} {petitions.length === 1 ? 'goes' : 'go'} back to the sems AMIS offers {petitions.length === 1 ? 'it' : 'them'}</small></button>
+					{/if}
+					<button type="button" class="pl-menu-item" onclick={savePlan}>Save plan<small>Download your marks, moves and settings as a file</small></button>
 					<button type="button" class="pl-menu-item" onclick={() => planInput?.click()}>Load plan<small>Restore a plan file you saved earlier</small></button>
-					<button type="button" class="pl-menu-item" onclick={exportXlsx}>Export to Excel<small>A color-coded sheet with one column per term</small></button>
-					<button type="button" class="pl-menu-item" onclick={printPlan}>Print<small>Every term on paper, like the official checklist</small></button>
+					<button type="button" class="pl-menu-item" onclick={copyPlanLink}>Copy a link to this plan<small>It opens your plan for a blockmate or your adviser, with no grades</small></button>
+					<button type="button" class="pl-menu-item" onclick={exportXlsx}>Export to Excel<small>A color-coded sheet with one column per sem</small></button>
+					<button type="button" class="pl-menu-item" onclick={printPlan}>Print<small>Every sem on paper, like the official checklist</small></button>
 					<button type="button" class="pl-menu-item pl-danger" onclick={resetPlan}>Reset plan<small>Clears marks, moves and petitions</small></button>
 				</div>
 			</details>
@@ -496,7 +624,7 @@
 			/>
 		</section>
 
-		<p class="pl-result" aria-live="polite">{wiResult}</p>
+		<p class="pl-result" aria-live="polite">{#if wiResult}{wiResult} <button class="textbtn" type="button" onclick={clearWhatif}>Clear</button>{/if}</p>
 
 		{#if app.fixes.length}
 			<section class="pl-fixes" aria-label="Your fixes to this checklist">
@@ -517,63 +645,16 @@
 		{/if}
 
 		<div class="pl-sheet" data-testid="planner-sheet" bind:this={sheetEl}>
-			{#each years as year (year.label)}
-				<section class="pl-year" aria-label={year.label}>
-					<h3>{year.label}</h3>
-					{#each year.terms as term (term.column.abs)}
-						{@const f = term.f}
-						<details class="pl-term" class:past={f.isPast} data-sem={term.sem} open={!f.isPast || f.tag === 'Now' || term.failed > 0}>
-							<summary>
-								<Icon name="chevron" size={16} />
-								<span class="pl-term-name">{term.name}</span>
-								{#if f.tag === 'Next' || f.tag === 'Now'}<span class="pl-term-tag">{f.tag === 'Next' ? 'next' : 'now'}</span>{/if}
-								<span class="pl-term-facts">
-									{#if term.failed}<span class="bad">{term.failed} failed</span>{/if}
-									{#if term.gwa}<span>GWA {term.gwa.toFixed(4)}</span>{/if}
-									<span class:warn={f.loud} title={f.warn || undefined}>{#if f.loud}<Icon name="alert" size={13} />{/if}{f.units} units</span>
-								</span>
-								{#if f.warn}<span class="visually-hidden">{f.warn}</span>{/if}
-							</summary>
-							<ul class="pl-rows" class:nograde={!term.cards.some((c) => c.grade)}>
-								{#each term.cards as card (card)}
-									{@const c = model.byCode.get(card.code)!}
-									{@const facts = cardFacts(card, view)}
-									{@const isPrimary = layout.primary[card.code] === card}
-									{@const word = card.status === 'passed' || card.status === 'planned' || card.status === 'ready' ? '' : facts.statusLabel}
-									<li>
-										<button
-											type="button"
-											class="pl-row st-{card.status}"
-											class:history={card.history || card.hypothetical}
-											class:generic={!!c.genericRequirement}
-											class:chain={chain?.has(card.code) && !(selected === card.code && isPrimary)}
-											class:dim={chain && !chain.has(card.code)}
-											data-code={card.code}
-											data-primary={isPrimary ? '1' : undefined}
-											aria-pressed={selected === card.code && isPrimary}
-											aria-label="{c.code}, {c.title}. {facts.statusLabel}{facts.crit ? ', critical' : ''}. {c.units} units{card.grade ? `, grade ${card.grade}` : ''}.{card.waitingOn ? ` Waiting on ${card.waitingOn}.` : ''}"
-											onclick={() => select(card.code)}
-										>
-											<span class="pl-mark"><Icon name={STATUS[card.status][0] as IconName} size={16} /></span>
-											<span class="pl-code">{c.code}{#if card.pinned}<span class="pl-pin" title="Moved later by you"> *</span>{/if}</span>
-											<span class="pl-title">{c.title}</span>
-											<span class="pl-row-note" class:warn={facts.note?.warn}>
-												{[facts.note?.text ?? word, facts.crit ? 'Critical' : ''].filter(Boolean).join(', ')}
-											</span>
-											<span class="pl-row-units">{c.units}</span>
-											<span class="pl-row-grade">{card.grade ?? ''}</span>
-										</button>
-										{#if isPrimary && selected === card.code}{@render detail(card.code)}{/if}
-									</li>
-								{:else}
-									<li class="pl-empty">Nothing offered that fits</li>
-								{/each}
-							</ul>
-						</details>
-					{/each}
-				</section>
-			{/each}
+			{@render yearList(ahead)}
+			{#if past.length}
+				<details class="pl-term pl-past">
+					<summary><Icon name="chevron" size={16} />{pastLine}</summary>
+					{@render yearList(past)}
+				</details>
+			{/if}
 		</div>
+
+		<p class="pl-muted pl-how">GradeSim puts each course in the earliest sem its prerequisites and AMIS offerings allow.</p>
 
 		<div class="pl-fixes pl-add">
 			{#if fixing === 'add'}

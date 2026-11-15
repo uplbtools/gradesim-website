@@ -12,7 +12,7 @@
 </svelte:head>
 
 <div class="wrap">
-	<PageHead title={missing ? 'This page is not here' : 'Something went wrong'}>
+	<PageHead title={missing ? "This page isn't here" : 'Something went wrong'}>
 		{#if missing}
 			The link may be old or mistyped. Your grades are safe, since they live in this browser and not on any page.
 		{:else}
@@ -20,8 +20,8 @@
 		{/if}
 	</PageHead>
 	<p class="next">
-		<a class="btn btn-primary" href={resolve('/')}>Open Elbi GradeSim</a>
-		<a class="btn btn-secondary" href={resolve('curricula/')}>Browse curricula</a>
+		<a class="btn btn-primary" href={resolve('/')}>Open GradeSim</a>
+		<a class="btn btn-secondary" href={resolve('curricula/')}>Browse checklists</a>
 		<a class="textbtn" href="https://github.com/uplbtools/gradesim/issues" rel="noopener" target="_blank">Report a broken link</a>
 	</p>
 </div>

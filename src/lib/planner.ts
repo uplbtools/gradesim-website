@@ -49,6 +49,28 @@ export function absLabel(abs: number): string {
 }
 export const ayLabel = ayOfAbs;
 
+/** The AMIS term id of a sem, such as 1261 for 1st sem 2026 and 1253 for midyear 2026. */
+export const amisTerm = (abs: number) => (Math.floor(abs / 3) - 1900) * 10 + (abs % 3) + 1;
+export const absOfAmisTerm = (id: number) => (Math.floor(id / 10) + 1900) * 3 + (id % 10) - 1;
+
+/** Room TBA's planner with these courses for one sem, each on its first section. */
+export function roomTbaLink(abs: number, codes: string[]): string {
+	const s = [...new Set(codes.map((c) => c.replace(/ \(\d+\)$/, '')))].map((c) => [c, '', '']);
+	const plan = btoa(JSON.stringify({ v: 1, t: amisTerm(abs), s }));
+	return `https://room-tba.uplb.tools/planner?plan=${plan.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')}`;
+}
+
+/** Courses a student takes in one sem, from Room TBA. A sem that has started marks them in progress, and a later one moves them there. */
+export function takeCourses(codes: string[], abs: number, s: Pick<PlannerInput, 'customCourseStatus' | 'plannerPins'>, now = new Date()) {
+	const customCourseStatus = { ...s.customCourseStatus };
+	const plannerPins = { ...s.plannerPins };
+	codes.forEach((c) => {
+		if (abs <= calendarAbs(now)) customCourseStatus[c] = 'inprogress';
+		else plannerPins[c] = abs;
+	});
+	return { customCourseStatus, plannerPins };
+}
+
 // Month heuristic for the current term (Aug-Dec 1st, Jan-May 2nd,
 // Jun-Jul midyear). Only used when grades are older than the calendar.
 export function calendarAbs(now = new Date()): number {
@@ -68,6 +90,7 @@ export interface PlannerOptions {
 	cap: number | 'checklist';
 	midyear: boolean;
 	midyear9: boolean;
+	minLoad?: number;
 }
 
 export interface PlannerInput {
@@ -78,6 +101,8 @@ export interface PlannerInput {
 	plannerPetitions: Record<string, true>;
 	plannerOptions: PlannerOptions;
 	whatif: { code: string; mode: WhatIfMode } | null;
+	/** A shared plan starts in its owner's next sem. */
+	startAbs?: number;
 }
 
 export interface Model {
@@ -92,7 +117,7 @@ export interface Model {
 	graph: Graph;
 }
 
-/** 18 units a sem unless the student picks 21 in Plan options. */
+/** 18 units a sem unless the student picks 21 in Plan settings. */
 export const DEFAULT_PLANNER_OPTIONS: PlannerOptions = { cap: 18, midyear: false, midyear9: false };
 
 /**
@@ -252,7 +277,7 @@ export interface CourseInfo {
 export function compute(model: Model, input: PlannerInput, now = new Date()) {
 	const opts = input.plannerOptions;
 	const hist = readHistory(model, input, now);
-	const startAbs = Math.max(hist.latestAbs != null ? hist.latestAbs + 1 : 0, calendarAbs(now));
+	const startAbs = Math.max(hist.latestAbs != null ? hist.latestAbs + 1 : 0, calendarAbs(now), input.startAbs ?? 0);
 
 	// Per course: what the grades say, then any manual override.
 	const info: Record<string, CourseInfo> = {};
@@ -363,9 +388,10 @@ export function compute(model: Model, input: PlannerInput, now = new Date()) {
 		{ substitutions: input.substitutions, overrides: input.customCourseStatus }
 	);
 
-	const conflicts = prereqConflicts(model.courses, (code) => (info[code] ? info[code].status : passed.has(code) && 'passed'));
+	const statusOf = (code: string) => (info[code] ? info[code].status : passed.has(code) && 'passed');
+	const conflicts = prereqConflicts(model.courses, statusOf);
 
-	const v = { model, input, hist, info, startAbs, passed: nowRun.passed, failures, costs, now: nowRun, ideal, noWhatif, slips, unitCaps, capAt, byChecklist, left, conflicts };
+	const v = { model, input, hist, info, startAbs, passed: nowRun.passed, failures, costs, now: nowRun, ideal, noWhatif, slips, unitCaps, capAt, byChecklist, left, conflicts, statusOf };
 	v.costs.forEach((c) => {
 		c.cost = termsLate(v, c.costT[0], c.costT[1]);
 	});
@@ -382,7 +408,7 @@ export function termsLate(v: Pick<View, 'startAbs' | 'input'>, fromT: number, to
 	}
 	return n;
 }
-export const termsText = (n: number) => `${n} term${n === 1 ? '' : 's'}`;
+export const termsText = (n: number) => `${n} sem${n === 1 ? '' : 's'}`;
 export const unitsText = (n: number) => `${n} unit${n === 1 ? '' : 's'}`;
 
 /* ---------- Summary ---------- */
@@ -393,7 +419,7 @@ export function summary(v: View) {
 	const headline =
 		gradAbs == null
 			? r.unschedulable.length
-				? 'Some courses cannot be placed'
+				? "Some courses can't be placed"
 				: 'All planned requirements done'
 			: `Graduate ${absLabel(gradAbs)}`;
 
@@ -404,24 +430,31 @@ export function summary(v: View) {
 		const culprits = v.costs.filter((c) => c.cost > 0);
 		const one = culprits.length === 1 ? culprits[0] : v.failures.length === 1 ? v.failures[0] : null;
 		const why = one
-			? `because ${one.code} ${one.source === 'whatif' ? 'is failed in this what-if' : 'failed'}`
+			? one.source === 'whatif' ? `because ${one.code} is failed in this what-if` : `because you failed ${one.code}`
 			: `because of ${v.failures.length} failed courses`;
-		deltaText = `+${termsText(delta)} ${why}`;
+		deltaText = `That's ${termsText(delta)} later, ${why}`;
 	} else if (v.failures.length) {
-		deltaText = `No delay from ${v.failures.length === 1 ? v.failures[0].code : v.failures.some((f) => f.source === 'whatif') ? 'your failed courses or the what-if' : 'your failed courses'}`;
+		deltaText = v.failures.length === 1 ? `${v.failures[0].code} doesn't delay you` : `Your failed courses${v.failures.some((f) => f.source === 'whatif') ? ' and the what-if' : ''} don't delay you`;
 		deltaOk = true;
 	}
 
-	const termsLeft = r.plan.filter((p) => p.courses.length).length;
+	const mids = r.plan.filter((p) => p.courses.length && (v.startAbs + p.termIndex) % 3 === 2).length;
+	const sems = r.plan.filter((p) => p.courses.length).length - mids;
 	const nowTaking = Object.values(v.info).some((i) => i.status === 'inprogress');
-	const sentences: string[] = [];
-	if (gradAbs != null)
-		sentences.push(`That is ${ayLabel(gradAbs)}, with ${termsText(termsLeft)} of classes from ${absLabel(v.startAbs)}.`);
-	sentences.push(`You have ${unitsText(v.left.units)} left to pass${nowTaking ? ', counting this term' : ''}.`);
-	const sub = sentences.join(' ');
+	const left = gradAbs != null ? `${termsText(sems)}${mids ? `, ${mids} midyear${mids === 1 ? '' : 's'}` : ''} and ${unitsText(v.left.units)}` : unitsText(v.left.units);
+	const sub = `${left} left${nowTaking ? ', counting this sem' : ''}.`;
 
 	const showCosts = v.costs.length > 1;
 	return { headline, deltaText, deltaOk, sub, costs: showCosts ? v.costs : [] };
+}
+
+/** What a change of settings does to graduation, as the end of a sentence. */
+export function optionEffect(v: View, patch: Partial<PlannerOptions>, now = new Date()): string {
+	const w = compute(v.model, { ...v.input, plannerOptions: { ...v.input.plannerOptions, ...patch } }, now);
+	const a = v.now.result.gradTermIndex;
+	const b = w.now.result.gradTermIndex;
+	if (a < 0 || b < 0 || a === b) return 'your graduation sem stays the same.';
+	return `you'd graduate ${absLabel(w.startAbs + b)}, which is ${b < a ? 'earlier' : 'later'}.`;
 }
 
 /* ---------- Cards and columns ---------- */
@@ -431,8 +464,8 @@ export function offeringLabel(c: PlanCourse): string {
 	const o2 = offeredIn(c, '2');
 	const off = c.offered as Record<number, number> | null | undefined;
 	const om = off ? off[3] > 0 : c.sem === 'midyear';
-	let base = o1 && o2 ? 'Any sem' : o1 ? '1st only' : o2 ? '2nd only' : om ? 'Midyear' : 'Not seen';
-	if (om && (o1 || o2)) base += ' + mid';
+	let base = o1 && o2 ? 'Any sem' : o1 ? '1st only' : o2 ? '2nd only' : om ? 'Midyear' : 'Not offered lately';
+	if (om && (o1 || o2)) base += ' and midyear';
 	return base;
 }
 
@@ -577,6 +610,12 @@ function orderColumns(model: Model, list: Column[], primary: Record<string, Card
 }
 
 /** On the critical path. Free elective cards stand for any course, so they never are. */
+/** The new conflict a mark would create, such as a failed prerequisite of a passed course. */
+export function markConflict(v: View, code: string, mark: 'passed' | 'failed') {
+	const known = new Set(v.conflicts.map((c) => c.code + '>' + c.pre));
+	return prereqConflicts(v.model.courses, (c) => (c === code ? mark : v.statusOf(c))).find((c) => !known.has(c.code + '>' + c.pre));
+}
+
 export const isCritical = (code: string, v: View) =>
 	v.slips[code] > 0 && v.model.byCode.get(code)?.genericRequirement !== 'elective';
 
@@ -599,7 +638,7 @@ export function columnFacts(column: Column, v: View) {
 	let sub: string;
 	if (column.abs === -1) {
 		name = 'Credited';
-		sub = 'No term on record';
+		sub = 'No sem on record';
 	} else if (column.abs === Infinity) {
 		name = "Can't place";
 		sub = 'Check prerequisites';
@@ -619,7 +658,8 @@ export function columnFacts(column: Column, v: View) {
 		if (isMid && units > 6) warn = "Over 6 units in midyear needs the Dean's approval (max 9).";
 		else if (!isMid && units > v.capAt(column.abs)) warn = `Over your ${v.capAt(column.abs)}-unit cap. This needs an overload approval.`;
 		else if (!isMid && units > 18)
-			warn = v.byChecklist ? 'Over 18 units, which the checklist puts in this sem.' : 'Over 18 units. This is allowed up to 21 when the term has lab courses.';
+			warn = v.byChecklist ? 'Over 18 units, which the checklist puts in this sem.' : 'Over 18 units. This is allowed up to 21 when the sem has lab courses.';
+		else if (!isMid && units < (v.input.plannerOptions.minLoad || 0)) warn = `Under your ${v.input.plannerOptions.minLoad}-unit minimum.`;
 	}
 	const loud = !!warn && (isMid || units > v.capAt(column.abs));
 	return { isPast, name, sub, units, isMid, future, tag, warn, loud, cap: future ? (isMid ? v.unitCaps.midyear : v.capAt(column.abs)) : null };
@@ -637,7 +677,7 @@ export function pastFailMessage(v: View, code: string): string {
 	const retake = t === undefined ? '' : ` The retake is planned for ${absLabel(v.startAbs + t)}.`;
 	return past.cost > 0
 		? `${code} is failed on your record, which moves graduation ${termsText(past.cost)} later, to ${absLabel(v.startAbs + v.now.result.gradTermIndex)}.${retake}`
-		: `${code} is failed on your record, but it does not move graduation.${retake}`;
+		: `${code} is failed on your record, but it doesn't move graduation.${retake}`;
 }
 
 /** Courses whose planned term moved later between two runs. */
@@ -655,10 +695,10 @@ export function whatIfMessage(v: View): string {
 		(c) => c !== wi.code && base.assignedTerm[c] !== undefined && after.assignedTerm[c] > base.assignedTerm[c]
 	);
 	const list = pushed.length > 5 ? `${pushed.slice(0, 5).join(', ')} and ${pushed.length - 5} more` : pushed.join(', ');
-	const verb = wi.mode === 'fail' ? `Failing ${wi.code}` : `Taking ${wi.code} ${wi.mode === '1' ? 'a term' : 'a year'} later`;
+	const verb = wi.mode === 'fail' ? `Failing ${wi.code}` : `Taking ${wi.code} ${wi.mode === '1' ? 'a sem' : 'a year'} later`;
 	return slip > 0
-		? `${verb} moves graduation to ${absLabel(v.startAbs + after.gradTermIndex)} (+${termsText(slip)}).${pushed.length ? ` Also pushed later are ${list}.` : ''}`
-		: `${verb} does not move graduation.${pushed.length ? ` It shifts ${list}.` : ' Nothing else shifts.'}`;
+		? `${verb} moves graduation to ${absLabel(v.startAbs + after.gradTermIndex)}, ${termsText(slip)} later.${pushed.length ? ` Also pushed later are ${list}.` : ''}`
+		: `${verb} doesn't move graduation.${pushed.length ? ` It shifts ${list}.` : ' Nothing else shifts.'}`;
 }
 
 /* ---------- Save, load and export ---------- */
@@ -676,16 +716,20 @@ export interface PlanFile {
 	plannerPetitions: PlannerInput['plannerPetitions'];
 	plannerOptions: PlannerOptions;
 	substitutions: Record<string, string>;
+	/** Only in a link: what the plan needs in place of the owner's grades. */
+	track?: string | null;
+	specialization?: string | null;
+	startAbs?: number;
 }
 
-/** Returns a friendly reason the file can't be used, or '' when it is fine. */
+/** Returns a friendly reason the file can't be used, or '' when it's fine. */
 export function checkPlan(p: unknown): string {
 	const isObj = (x: unknown): x is Record<string, unknown> => x != null && typeof x === 'object' && !Array.isArray(x);
 	const all = (o: unknown, ok: (x: unknown) => boolean) => isObj(o) && Object.values(o).every(ok);
-	if (!isObj(p) || p.source !== 'elbi-gradesim-plan') return 'That file is not a GradeSim course plan. Pick a file made with Save plan.';
-	if (p.version !== 1) return 'That plan was saved by a newer GradeSim. Reload this page and try again.';
+	if (!isObj(p) || p.source !== 'elbi-gradesim-plan') return "That file isn't a GradeSim course plan. Pick a file made with Save plan.";
+	if (p.version !== 1) return 'A newer GradeSim saved that plan. Reload this page, then load it again.';
 	const prog = UPLB_PROGRAMS[String(p.program)];
-	if (!prog || !prog.majorCourses) return `That plan is for a program this version does not have (${String(p.program)}).`;
+	if (!prog || !prog.majorCourses) return "That plan is for a program GradeSim doesn't have yet, so nothing changed.";
 	const o = p.plannerOptions;
 	const w = p.whatif;
 	const ok =
@@ -695,8 +739,9 @@ export function checkPlan(p: unknown): string {
 		all(p.substitutions, (x) => typeof x === 'string') &&
 		isObj(o) &&
 		(o.cap === 'checklist' || [18, 21].includes(Number(o.cap))) &&
+		(o.minLoad == null || [0, 12, 15, 18].includes(Number(o.minLoad))) &&
 		(w == null || (isObj(w) && typeof w.code === 'string' && ['fail', '1', '3'].includes(w.mode as string)));
-	return ok ? '' : 'That plan file looks damaged, so nothing was changed.';
+	return ok ? '' : 'That plan file is damaged, so nothing changed. Save the plan again and load the new file.';
 }
 
 export const today = (d = new Date()) => d.toLocaleDateString('en-CA'); // local YYYY-MM-DD
@@ -766,7 +811,7 @@ export function exportModel(v: View, columns: Column[], primary: Record<string, 
 	const s = summary(v);
 	return {
 		title: `${s.headline}${s.deltaText ? ` (${s.deltaText})` : ''}`,
-		subtitle: `${v.model.program.name || v.model.code}. ${s.sub} Exported ${today()} from Elbi GradeSim.`,
+		subtitle: `${v.model.program.name || v.model.code}. ${s.sub} Exported ${today()} from GradeSim.`,
 		columns: cols,
 		courses
 	};

@@ -5,7 +5,7 @@
 
 <Seo
 	title="Terms of use, Elbi GradeSim"
-	description="Terms for using the Elbi GradeSim web app and browser extension. Calculations are estimates and the tool is not affiliated with UPLB."
+	description="Terms for using the Elbi GradeSim web app and browser extension. Calculations are estimates and the tool isn't affiliated with UPLB."
 	path="/terms/"
 />
 
@@ -14,7 +14,7 @@
 
 	<article class="prose">
 		<h2>Agreement</h2>
-		<p>By using the Elbi GradeSim web app or installing the extension, you agree to these terms. If you do not agree, please do not use them.</p>
+		<p>By using the Elbi GradeSim web app or installing the extension, you agree to these terms. If you don't agree, please don't use them.</p>
 
 		<h2>What Elbi GradeSim does</h2>
 		<p>
@@ -32,28 +32,28 @@
 
 		<h2>Your data</h2>
 		<p>
-			Your grades are saved in your browser and you are responsible for them. Clearing your browser data or using Clear my data
-			removes them, and we cannot recover them for you. Export a backup if you want a copy.
+			Your grades are saved in your browser and you're responsible for them. Clearing your browser data or using Clear my data
+			removes them, and we can't recover them for you. Export a backup if you want a copy.
 		</p>
-		<p>A checklist fix that you send to UPLB Tools becomes a public issue on GitHub, so do not put personal details in its note.</p>
+		<p>A checklist fix that you send to UPLB Tools becomes a public issue on GitHub, so don't put personal details in its note.</p>
 
 		<h2>Acceptable use</h2>
 		<ul>
 			<li>Use Elbi GradeSim for your own academic planning.</li>
-			<li>Do not tamper with AMIS or try to collect data beyond normal browsing.</li>
-			<li>Do not redistribute modified builds in a way that misrepresents the project.</li>
+			<li>Don't tamper with AMIS or try to collect data beyond normal browsing.</li>
+			<li>Don't redistribute modified builds in a way that misrepresents the project.</li>
 			<li>Keep personal grades out of curriculum files you contribute on GitHub.</li>
 		</ul>
 
 		<h2>No warranty</h2>
 		<p>
-			The web app and the extension are provided as is, without warranties of any kind. The authors are not liable for academic
+			The web app and the extension are provided as is, without warranties of any kind. The authors aren't liable for academic
 			decisions made from their output.
 		</p>
 
 		<h2>UPLB and AMIS</h2>
 		<p>
-			AMIS is operated by UPLB. Elbi GradeSim is not affiliated with or endorsed by the University of the Philippines Los
+			AMIS is operated by UPLB. Elbi GradeSim isn't affiliated with or endorsed by the University of the Philippines Los
 			Baños or the UP System. UP and UPLB marks belong to the UP System. Follow the AMIS terms of use when you access your
 			account.
 		</p>

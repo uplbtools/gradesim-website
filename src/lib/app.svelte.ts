@@ -16,6 +16,10 @@ export interface Saved {
 	gradesData: GradesData | null;
 	/** Where the grades came from, for the status line. */
 	source: 'extension' | 'file' | 'manual' | null;
+	/** When the extension last read AMIS for these grades, in ms. */
+	fetchedAt: number | null;
+	/** A grade was added, changed or removed here since the last import. */
+	handEdited: boolean;
 	selectedProgram: string;
 	excludedCourses: string[];
 	substitutions: Record<string, string>;
@@ -37,6 +41,8 @@ export const blank = (): Saved => ({
 	version: 1,
 	gradesData: null,
 	source: null,
+	fetchedAt: null,
+	handEdited: false,
 	selectedProgram: DEFAULT_PROGRAM,
 	excludedCourses: [],
 	substitutions: {},
@@ -73,6 +79,8 @@ class AppState {
 	whatif = $state<PlannerInput['whatif']>(null);
 	/** Planning a program with no grades, from a ?program= link. Not saved. */
 	blank = $state(false);
+	/** The first sem of a plan opened from a link, or null. Nothing is saved while one is open. */
+	shared = $state<number | null>(null);
 
 	/** The stored grades with removal exam results applied. */
 	grades = $derived(applyRemovals(this.s.gradesData, this.s.removals));
@@ -90,6 +98,7 @@ class AppState {
 	}
 
 	persist() {
+		if (this.shared != null) return;
 		try {
 			localStorage.setItem(STORAGE_KEY, JSON.stringify(this.s));
 		} catch {
@@ -100,11 +109,30 @@ class AppState {
 	applyGrades(patch: GradesPatch, source: Saved['source']) {
 		this.s.gradesData = patch.gradesData;
 		this.s.source = source;
+		this.s.fetchedAt = patch.fetchedAt ?? null;
+		this.s.handEdited = false;
 		if (patch.selectedProgram) this.s.selectedProgram = patch.selectedProgram;
 		if (patch.excludedCourses) this.s.excludedCourses = patch.excludedCourses;
 		if (patch.substitutions) this.s.substitutions = patch.substitutions;
 		if (patch.removals) this.s.removals = patch.removals;
 		if (patch.selectedSpecializations) this.s.selectedSpecializations = patch.selectedSpecializations;
+		// A backup file restores the track and the plan. The extension only fills them when they're empty here.
+		const s = this.s;
+		const empty = ![s.customCourseStatus, s.plannerPins, s.plannerPetitions].some((o) => Object.keys(o).length);
+		if (patch.track && (source === 'file' || !s.track)) s.track = patch.track;
+		if (patch.plan && (source === 'file' || empty)) Object.assign(s, patch.plan);
+	}
+
+	/** Newer grades from the extension. Everything the student chose here stays. */
+	refreshGrades(patch: GradesPatch) {
+		this.s.gradesData = patch.gradesData;
+		this.s.fetchedAt = patch.fetchedAt ?? null;
+	}
+
+	/** A grade added, changed or removed by hand. */
+	editGrades(data: GradesData) {
+		this.s.gradesData = data;
+		this.s.handEdited = true;
 	}
 
 	/** Pick a specialization for the current program, or none with an empty key. */
@@ -132,6 +160,21 @@ class AppState {
 		this.s.plannerOptions = plan.plannerOptions;
 		this.s.substitutions = plan.substitutions;
 		this.whatif = plan.whatif;
+	}
+
+	/** Show a plan from a link without touching what's saved here. */
+	viewPlan(plan: PlanFile) {
+		this.shared = plan.startAbs ?? 0;
+		this.s = { ...blank(), track: plan.track ?? null, selectedSpecializations: plan.specialization ? { [plan.program]: plan.specialization } : {} };
+		this.applyPlan(plan);
+		this.blank = true;
+	}
+
+	closeShared() {
+		this.whatif = null;
+		this.blank = false;
+		this.s = read();
+		this.shared = null;
 	}
 
 	/** Record a removal exam result for a 4.00, or clear it with an empty result. */

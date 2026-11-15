@@ -147,7 +147,7 @@ export function fillRequirementSlots<R extends Row>(
  * Latin honors count only as many electives as the program requires, the
  * earliest first. Returns the passed rows that fill no slot, which the honors
  * GWA leaves out. A program with no elective slots returns none, since its
- * data cannot tell extra from missing.
+ * data can't tell extra from missing.
  */
 export function surplusElectives<R extends Row>(courses: PlanCourse[], passedRows: R[], substitutions: Record<string, string> = {}): R[] {
 	if (!courses.some((c) => c.genericRequirement === 'elective')) return [];
@@ -227,7 +227,7 @@ export function gwaOutlook(gwa: number, units: number, left: number, target: num
 	if (left <= 0) return { status: gwa <= target ? 'any-pass' : 'out-of-reach', required: null, ceiling, bestHonor };
 	const required = (target * (units + left) - sum) / left;
 	// A pass is 1.00 to 3.00, so a needed average of 3.00 or more means any
-	// passing grade is enough, and one under 1.00 cannot happen.
+	// passing grade is enough, and one under 1.00 can't happen.
 	const status = required < 1 - 1e-9 ? 'out-of-reach' : required >= 3 ? 'any-pass' : 'reachable';
 	return { status, required, ceiling, bestHonor };
 }

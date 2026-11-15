@@ -104,7 +104,7 @@ export function normalizeCourseCode(code: unknown): string {
 
 export function isNonGwaCourseCode(courseCode: string): boolean {
 	const code = normalizeCourseCode(courseCode);
-	// Word boundary so PEd and similar majors are not caught by PE.
+	// Word boundary so PEd and similar majors aren't caught by PE.
 	return NON_GWA_PREFIXES.some((prefix) => new RegExp(`^${prefix}\\b`).test(code));
 }
 
@@ -318,7 +318,7 @@ export function getCompletedRequirementSlotCodes(
 /**
  * The student's track (SP or thesis) from AMIS rows. Any enrollment counts,
  * including the course being taken now (no grade yet) and a failed attempt.
- * Only a drop or withdrawal does not.
+ * Only a drop or withdrawal doesn't.
  */
 export function detectTrack(
 	program: Pick<Program, 'tracks'> | null | undefined,
@@ -328,7 +328,7 @@ export function detectTrack(
 	const codes = (courses || [])
 		.filter((c) => !['DRP', 'W'].includes(String(c.grade ?? '').toUpperCase().trim()))
 		.map((c) => normalizeCourseCode(c.code || c.courseCode));
-	// Longest code first, so AAE 200A is not mistaken for AAE 200.
+	// Longest code first, so AAE 200A isn't mistaken for AAE 200.
 	const tracks = Object.entries(program.tracks).sort(([, a], [, b]) => b.code.length - a.code.length);
 	for (const [key, track] of tracks) {
 		const trackCode = normalizeCourseCode(track.code);
@@ -354,7 +354,7 @@ export function countCompletedGE(completedCourses: Done[]): number {
  */
 export function getProgramDataQuality(programCode: string, catalog: Record<string, CatalogEntry> = UPLB_CATALOG) {
 	const program = UPLB_PROGRAMS[programCode];
-	if (!program) return { confident: false, prereqShare: 0, reasons: ['This program is not in GradeSim yet.'] };
+	if (!program) return { confident: false, prereqShare: 0, reasons: ["This program isn't in GradeSim yet."] };
 	const named = (program.majorCourses || []).filter((c) => !c.genericRequirement);
 	const withPrereqs = named.filter((c) => {
 		const entry = catalog[normalizeCourseCode(c.code)];
@@ -377,6 +377,7 @@ export const CHECKLIST_PROGRAM: Record<string, string> = {
 	'BS-Applied-Mathematics': 'BSAPMATH',
 	'BS-Applied-Physics': 'BSAPPHY',
 	'BS-Mathematics': 'BSMATH',
+	'BS-Mathematics-and-Science-Teaching': 'BSMST',
 	'BS-Statistics': 'BSSTAT',
 	'BA-Communication-Arts': 'BACOMM',
 	'BA-Philosophy': 'BAPHILO',
@@ -397,5 +398,13 @@ export const CHECKLIST_PROGRAM: Record<string, string> = {
 	'BS-Nutrition': 'BSNUTRI',
 	'Doctor-of-Veterinary-Medicine': 'DVM',
 	'BS-Development-Communication': 'BSDC',
-	'BS-Agricultural-Chemistry': 'BSACHEM'
+	'BS-Agricultural-Chemistry': 'BSACHEM',
+	'BS-Computer-Science': 'BSCS',
+	'BS-Accountancy': 'BSACCT',
+	'BS-Agricultural-and-Biosystems-Engineering': 'BSABE',
+	'BS-Materials-Engineering': 'BSMATE',
+	'AA-Sports-Studies': 'AASS',
+	'AA-Entrepreneurship': 'AAENTREP',
+	'Associate-in-Forestry': 'AAFOR',
+	'AS-Development-Communication': 'ASDC'
 };

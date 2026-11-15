@@ -242,6 +242,7 @@ textarea {
 	border-radius: var(--radius-sm);
 	background: var(--bg-card);
 	color: var(--ink);
+	font-size: 1rem;
 	font-weight: 400;
 }
 
@@ -353,5 +354,16 @@ html[data-has-data] .welcome-pending {
 		transition-duration: 0.01ms !important;
 		animation-duration: 0.01ms !important;
 		scroll-behavior: auto !important;
+	}
+}
+
+/* Touch screens: every control is at least 44px tall. */
+@media (pointer: coarse) {
+	button,
+	select,
+	summary,
+	.check,
+	nav a {
+		min-height: 44px !important;
 	}
 }

@@ -72,6 +72,8 @@ const C = (code: string, units: number, sem?: string, prereqs: string[] = []): P
 	});
 	const t0Count = ['X1', 'X2', 'X3'].filter((c) => capped.assignedTerm[c] === 0).length;
 	eq(t0Count, 2);
+	deq(capped.spare, ['X1', 'X2', 'X3'].filter((c) => capped.assignedTerm[c] !== 0));
+	deq(scheduleEarliest({ courses: COURSES, passed: new Set(), startSem: '1' }).spare, []);
 	eq(Math.max(...['X1', 'X2', 'X3'].map(c => capped.assignedTerm[c])), 3);
 	
 	// HK and NSTP sit outside the cap, like the checklists' (2) and (3)

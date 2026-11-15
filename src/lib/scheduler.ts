@@ -64,7 +64,7 @@ const SEM_DIGIT: Record<Sem, 1 | 2 | 3> = { '1': 1, '2': 2, midyear: 3 };
 // Load rules from the UPLB catalog: 18 units a regular sem (21 with lab
 // courses), midyear 6 (the Dean may allow 9).
 export const DEFAULT_UNIT_CAPS: Record<Sem, number> = { '1': 18, '2': 18, midyear: 6 };
-// Assumption: UPLB does not publish standing thresholds in the catalog we have;
+// Assumption: UPLB doesn't publish standing thresholds in the catalog we have;
 // junior = 50% and senior = 75% of the program's total units.
 export const STANDING_FRACTION: Record<Standing, number> = { junior: 0.5, senior: 0.75 };
 
@@ -120,7 +120,7 @@ function absorb(groups: string[][]): string[][] {
  * Parse one AMIS req_courses string into CNF: pre is an AND of OR-groups.
  * "ABT 101 or COI" gives coi and no group (COI counts as satisfied).
  * "(CMSC 57 and CMSC 21)" gives [["CMSC 57"], ["CMSC 21"]].
- * "MATH 27 or Equivalent" gives [["MATH 27"]] (equivalents are not modelled).
+ * "MATH 27 or Equivalent" gives [["MATH 27"]] (equivalents aren't modelled).
  */
 export function parseRequisite(str: string | null | undefined): Requisite {
 	const out: Requisite = { pre: [], coi: false, standing: null, note: null };
@@ -492,6 +492,8 @@ export interface ScheduleResult {
 	assignedTerm: Record<string, number>;
 	conditional: Record<string, boolean>;
 	unschedulable: string[];
+	/** Ready for the first term but placed later. */
+	spare: string[];
 	warnings: string[];
 }
 
@@ -576,6 +578,7 @@ export function scheduleEarliest(opts: ScheduleOptions): ScheduleResult {
 	const assignedTerm: Record<string, number> = {};
 	const conditional: Record<string, boolean> = {};
 	const plan: ScheduleResult['plan'] = [];
+	let spare: string[] = [];
 	let emptyStreak = 0;
 
 	for (let t = 0; t < maxTerms && remaining.size > 0; t++) {
@@ -640,6 +643,10 @@ export function scheduleEarliest(opts: ScheduleOptions): ScheduleResult {
 				if (!offeredIn(byCode.get(c)!, sem)) conditional[c] = true;
 			});
 		});
+		if (t === 0) {
+			const kinds = new Set(placed.map(extraKind));
+			spare = candidates.filter((c) => assignedTerm[c] === undefined && !(extraKind(c) && kinds.has(extraKind(c))));
+		}
 		placed.forEach((c) => {
 			doneUnits += unitsOf(c);
 		});
@@ -659,11 +666,11 @@ export function scheduleEarliest(opts: ScheduleOptions): ScheduleResult {
 
 	const unschedulable = Array.from(remaining);
 	if (unschedulable.length > 0) {
-		warnings.push(`could not place: ${unschedulable.join(', ')}`);
+		warnings.push(`couldn't place: ${unschedulable.join(', ')}`);
 	}
 
 	const gradTermIndex = plan.length > 0 ? plan[plan.length - 1].termIndex : -1;
-	return { plan, gradTermIndex, assignedTerm, conditional, unschedulable, warnings };
+	return { plan, gradTermIndex, assignedTerm, conditional, unschedulable, spare, warnings };
 }
 
 /* ---------- Curricular Analytics metrics ---------- */

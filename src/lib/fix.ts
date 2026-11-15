@@ -28,7 +28,7 @@ const text = (v: unknown, max: number) =>
 		.trim()
 		.slice(0, max);
 
-/** A clean fix, or the reason it is refused. The app and the function both run it. */
+/** A clean fix, or the reason it's refused. The app and the function both run it. */
 export function validateFix(raw: unknown): ChecklistFix | string {
 	const r = (raw ?? {}) as Record<string, unknown>;
 	const kind = r.kind;
@@ -62,7 +62,7 @@ export function validateFix(raw: unknown): ChecklistFix | string {
 
 /** What a fix changes, as a phrase. */
 export function fixText(f: ChecklistFix): string {
-	if (f.kind === 'remove') return 'is not in the curriculum';
+	if (f.kind === 'remove') return "isn't in the curriculum";
 	const parts = [
 		f.kind === 'add' ? `is missing (${f.title})` : f.title ? `is titled ${f.title}` : '',
 		f.units ? `has ${f.units} ${f.units === 1 ? 'unit' : 'units'}` : '',

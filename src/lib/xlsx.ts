@@ -1,5 +1,5 @@
 // Tiny .xlsx writer for the planner export, ported from the extension (extension/src/xlsx.js).
-// Writes SpreadsheetML parts into a store-only (uncompressed) ZIP, so there is
+// Writes SpreadsheetML parts into a store-only (uncompressed) ZIP, so there's
 // no library to bundle and nothing remote to load.
 // No compression. A full plan is well under 200 KB uncompressed.
 

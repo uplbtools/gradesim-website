@@ -2,12 +2,13 @@
 	import { onMount, tick } from 'svelte';
 	import { app } from '#lib/app.svelte.ts';
 	import { getExtensionGrades, probeExtension } from '#lib/bridge.ts';
+	import { unpackHash } from '#lib/link.ts';
 	import { UPLB_PROGRAMS } from '#lib/curriculum.ts';
 	import { parseBackup, parseImport } from '#lib/importers.ts';
+	import { absLabel, absOfAmisTerm, takeCourses } from '#lib/planner.ts';
 	import Seo from '#lib/components/Seo.svelte';
 	import Notice from '#lib/components/Notice.svelte';
 	import Welcome from '#lib/components/Welcome.svelte';
-	import Summary from '#lib/components/Summary.svelte';
 	import GradesTab from '#lib/components/GradesTab.svelte';
 	import WhatIfTab from '#lib/components/WhatIfTab.svelte';
 	import Planner from '#lib/components/Planner.svelte';
@@ -15,7 +16,7 @@
 
 	const TABS = [
 		{ id: 'grades', label: 'Grades' },
-		{ id: 'whatif', label: 'What if' },
+		{ id: 'whatif', label: 'Target' },
 		{ id: 'planner', label: 'Planner' },
 		{ id: 'wrapped', label: 'Wrapped' }
 	] as const;
@@ -30,6 +31,25 @@
 	function readHash() {
 		const h = location.hash.slice(1);
 		if (TABS.some((t) => t.id === h)) tab = h as Tab;
+		else if (h.startsWith('d=')) fromLink();
+	}
+
+	async function fromLink() {
+		const hash = location.hash;
+		history.replaceState(history.state, '', location.pathname + location.search + '#grades'); // the grades leave the address bar
+		const text = await unpackHash(hash).catch(() => null);
+		if (text == null) {
+			message = { text: "GradeSim can't read that link, so nothing changed. Copy a new one on the device that has your grades.", tone: 'bad' };
+			return;
+		}
+		const r = parseImport(text);
+		if (r.kind === 'plan') {
+			app.viewPlan(r.plan);
+			setTab('planner');
+			return;
+		}
+		if (app.hasData && !confirm('This link holds grades. Replace the grades saved in this browser with them?')) return;
+		fromText(text, 'your link');
 	}
 
 	function setTab(id: Tab) {
@@ -37,12 +57,17 @@
 		history.replaceState(history.state, '', `#${id}`);
 	}
 
+	function pickTab(id: Tab) {
+		message = null;
+		setTab(id);
+	}
+
 	function onTabKey(e: KeyboardEvent, i: number) {
 		const n = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0;
 		if (!n && e.key !== 'Home' && e.key !== 'End') return;
 		e.preventDefault();
 		const next = e.key === 'Home' ? 0 : e.key === 'End' ? TABS.length - 1 : (i + n + TABS.length) % TABS.length;
-		setTab(TABS[next].id);
+		pickTab(TABS[next].id);
 		tick().then(() => document.getElementById(`tab-${TABS[next].id}`)?.focus());
 	}
 
@@ -50,16 +75,52 @@
 		app.load();
 		document.documentElement.dataset.appReady = ''; // hydrated; e2e waits on this
 		readHash();
-		// ?program=BSCHEM from the curricula page picks the program, then the URL is tidied.
+		// ?program=BSCHEM from the curricula page picks the program. ?from=extension and
+		// ?whatif=CMSC 21 come from the extension's popup. Then the URL is tidied.
 		const url = new URL(location.href);
 		const program = url.searchParams.get('program');
+		const fromPopup = url.searchParams.get('from') === 'extension';
+		const failed = url.searchParams.get('whatif');
+		if (failed) app.whatif = { code: failed, mode: 'fail' };
+		const take = url.searchParams.get('take');
+		const term = Number(url.searchParams.get('term'));
+		if (take && Number.isInteger(term) && term > 0) {
+			const checklist = new Set(UPLB_PROGRAMS[app.s.selectedProgram]?.majorCourses.map((c) => c.code));
+			const codes = take.split(',').map((c) => c.trim()).filter((c) => checklist.has(c));
+			const abs = absOfAmisTerm(term);
+			Object.assign(app.s, takeCourses(codes, abs, app.s));
+			tab = 'planner';
+			message = codes.length
+				? { text: `Room TBA put ${codes.join(', ')} in ${absLabel(abs)}.`, tone: 'ok' }
+				: { text: "None of the courses from Room TBA are on your checklist, so nothing changed.", tone: 'bad' };
+		}
 		if (program && UPLB_PROGRAMS[program]?.available) {
 			app.s.selectedProgram = program;
 			app.blank = true;
-			url.searchParams.delete('program');
+		} else if (!app.hasData && tab === 'planner' && !fromPopup) app.blank = true;
+		if (url.search) {
+			['program', 'from', 'whatif', 'take', 'term'].forEach((k) => url.searchParams.delete(k));
 			history.replaceState(history.state, '', url.pathname + url.search + url.hash);
-		} else if (!app.hasData && tab === 'planner') app.blank = true;
-		probeExtension().then((r) => (extension = r ?? 'missing'));
+		}
+		probeExtension().then(async (r) => {
+			extension = r ? (r.hasGrades ? 'found' : 'empty') : 'missing';
+			const s = app.s;
+			// Opening GradeSim from the popup is the student asking for their grades here.
+			if (fromPopup && !app.hasData) {
+				if (r?.hasGrades) await fromExtension();
+				else if (tab === 'planner') app.blank = true;
+				return;
+			}
+			if (!r?.hasGrades || !r.fetchedAt || s.source !== 'extension' || !s.fetchedAt || r.fetchedAt === s.fetchedAt) return;
+			if (s.handEdited) {
+				message = { text: 'The extension has newer grades from AMIS. Importing them replaces the grades you edited by hand.', tone: 'ok' };
+				return;
+			}
+			const patch = parseBackup(await getExtensionGrades());
+			if (typeof patch === 'string') return;
+			app.refreshGrades(patch);
+			message = { text: 'GradeSim loaded your newer grades from the extension.', tone: 'ok' };
+		});
 	});
 
 	// Save on every change once the saved state has been read.
@@ -72,7 +133,7 @@
 	async function fromExtension() {
 		const reply = await getExtensionGrades();
 		if (!reply) {
-			message = { text: 'The extension did not answer. Reload this page and try again.', tone: 'bad' };
+			message = { text: "The extension didn't answer, so nothing changed. Reload this page and try again.", tone: 'bad' };
 			return;
 		}
 		const r = parseBackup(reply);
@@ -81,19 +142,21 @@
 			return;
 		}
 		app.applyGrades(r, 'extension');
-		message = { text: `Imported ${app.courses.length} courses from the GradeSim extension.`, tone: 'ok' };
+		message = { text: `Imported ${app.courses.length} courses from the extension.`, tone: 'ok' };
 		manual = false;
 	}
 
-	async function fromFile(file: File) {
-		const result = parseImport(await file.text());
+	const fromFile = async (file: File) => fromText(await file.text(), file.name);
+
+	function fromText(text: string, name: string) {
+		const result = parseImport(text);
 		if (result.kind === 'error') {
 			message = { text: result.message, tone: 'bad' };
 			return;
 		}
 		if (result.kind === 'grades') {
 			app.applyGrades(result.patch, 'file');
-			message = { text: `Imported ${app.courses.length} courses from ${file.name}.`, tone: 'ok' };
+			message = { text: `Imported ${app.courses.length} courses from ${name}.`, tone: 'ok' };
 			manual = false;
 			return;
 		}
@@ -142,18 +205,22 @@
 		<Welcome {extension} {manual} onExtension={fromExtension} onFile={fromFile} onManual={() => (manual = true)} />
 	</div>
 {:else if !app.hasData}
-	<div class="dash wide">
+	<div class="dash wrap">
 		<p class="blank">
-			This is the {app.program.name} checklist planned from a blank transcript.
-			<button class="textbtn" type="button" onclick={() => { app.blank = false; setTab('grades'); }}>Add your grades</button> to plan from where you are.
+			{#if app.shared != null}
+				This is a {app.program.name} plan someone shared with you. Nothing here is saved in this browser.
+				<button class="textbtn" type="button" onclick={() => { app.closeShared(); setTab('grades'); }}>Close it</button>
+			{:else}
+				This is the {app.program.name} checklist planned from a blank transcript.
+				<button class="textbtn" type="button" onclick={() => { app.blank = false; setTab('grades'); }}>Add your grades</button> to plan from where you are.
+			{/if}
 		</p>
 		<Planner />
 	</div>
 {:else}
 	<div class="dash">
-		<div class={tab === 'planner' ? 'wide' : 'wrap'}>
+		<div class="wrap">
 			<h1 class="visually-hidden">Your dashboard</h1>
-			<Summary />
 			<div class="tabs" role="tablist" aria-label="GradeSim sections">
 				{#each TABS as t, i (t.id)}
 					<button
@@ -163,7 +230,7 @@
 						aria-selected={tab === t.id}
 						aria-controls="panel-{t.id}"
 						tabindex={tab === t.id ? 0 : -1}
-						onclick={() => setTab(t.id)}
+						onclick={() => pickTab(t.id)}
 						onkeydown={(e) => onTabKey(e, i)}
 					>
 						{t.label}
@@ -175,7 +242,7 @@
 			id="panel-{tab}"
 			role="tabpanel"
 			aria-labelledby="tab-{tab}"
-			class={tab === 'planner' ? 'wide' : 'wrap'}
+			class="wrap"
 		>
 			{#if tab === 'grades'}
 				<GradesTab {extension} onExtension={fromExtension} onFile={fromFile} />
@@ -253,17 +320,5 @@
 		display: inline;
 		min-height: 0;
 		padding: 0;
-	}
-
-	.wide {
-		max-width: 1600px;
-		margin: 0 auto;
-		padding: 0 16px;
-	}
-
-	@media (min-width: 720px) {
-		.wide {
-			padding: 0 24px;
-		}
 	}
 </style>

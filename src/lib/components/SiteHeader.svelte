@@ -54,10 +54,10 @@
 					<span class="menu-word">Menu</span>
 				</summary>
 				<nav class="menu-pop" aria-label="Site">
-					<a href={resolve('/')}>Your grades</a>
-					<a href={resolve('about/')}>About GradeSim</a>
-					<a href={resolve('curricula/')}>Curricula</a>
-					<a href={resolve('install/')}>Install the extension</a>
+					<a href={resolve('/')}>Grades</a>
+					<a href={resolve('about/')}>About</a>
+					<a href={resolve('curricula/')}>Checklists</a>
+					<a href={resolve('install/')}>Get the extension</a>
 					<a href={resolve('privacy/')}>Privacy</a>
 					<a href={resolve('terms/')}>Terms</a>
 					<hr />

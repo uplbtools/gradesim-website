@@ -23,7 +23,7 @@ test('fixes change the plan model', () => {
 	expect(model.byCode.has('CMSC 199')).toBe(false);
 	expect(model.byCode.get('CMSC 191')?.title).toBe('Special Topics');
 	expect(modelFor('BSCS', 'sp')!.byCode.get('CMSC 198')!.units).toBe(3);
-	expect(fixIssue('BSCS', fixes).body).toContain('| CMSC 199 | is not in the curriculum |');
+	expect(fixIssue('BSCS', fixes).body).toContain("| CMSC 199 | isn't in the curriculum |");
 });
 
 test('the function refuses requests until it is set up, and from other sites', async () => {

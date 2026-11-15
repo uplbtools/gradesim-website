@@ -5,10 +5,9 @@ import { expect, test } from 'vitest';
 import { UPLB_CATALOG } from './catalog.ts';
 import { getPlannerCourses, isNonGwaCourseCode, UPLB_PROGRAMS } from './curriculum.ts';
 import type { GradesData } from './grades.ts';
-import { compute, DEFAULT_PLANNER_OPTIONS, modelFor } from './planner.ts';
-import { amisCourses, applyRemovals, gradeResult, gwaOutlook, plannerCourseList, remainingRequirements, removalKey } from './requirements.ts';
+import { compute, DEFAULT_PLANNER_OPTIONS, markConflict, modelFor } from './planner.ts';
+import { amisCourses, applyRemovals, gradeResult, gwaOutlook, plannerCourseList, remainingRequirements, removalKey, surplusElectives } from './requirements.ts';
 import { enrichCourses, scheduleEarliest, semAt } from './scheduler.ts';
-import { surplusElectives } from './requirements.ts';
 
 test('grade results', () => {
 	expect(gradeResult('1.00')).toBe('passed');
@@ -184,6 +183,24 @@ test('BSCS special problem twice, midyear practicum and senior year electives', 
 	expect(view.info['CMSC 198'].status).toBe('passed');
 	expect(view.info['FE 1'].status).toBe('todo');
 	expect(view.conflicts).toEqual([{ code: 'CMSC 57', pre: 'CMSC 56' }]);
+});
+
+test('a mark that would fail the prerequisite of a passed course, or pass a course after a failed prerequisite, is refused', () => {
+	const taken: GradesData = {
+		student_grades: {
+			1231: { values: [v('CMSC 56', 'Discrete I', 3, '2.00'), v('CMSC 12', 'Foundations', 3, '5.00')] },
+			1232: { values: [v('CMSC 57', 'Discrete II', 3, '2.00')] }
+		}
+	};
+	const view = compute(
+		modelFor('BSCS', 'sp')!,
+		{ gradesData: taken, substitutions: {}, customCourseStatus: {}, plannerPins: {}, plannerPetitions: {}, plannerOptions: DEFAULT_PLANNER_OPTIONS, whatif: null },
+		new Date(2027, 1, 1)
+	);
+	expect(markConflict(view, 'CMSC 56', 'failed')).toEqual({ code: 'CMSC 57', pre: 'CMSC 56' });
+	expect(markConflict(view, 'CMSC 21', 'passed')).toEqual({ code: 'CMSC 21', pre: 'CMSC 12' });
+	expect(markConflict(view, 'CMSC 57', 'failed')).toBeUndefined();
+	expect(markConflict(view, 'MATH 27', 'passed')).toBeUndefined();
 });
 
 test('a 4.00 removal exam: a pass gives 3.00, a fail gives 5.00, other grades stay', () => {

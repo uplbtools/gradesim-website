@@ -87,7 +87,7 @@ export interface Course {
 }
 
 export const NON_NUMERIC_GRADES = ['S', 'U', 'INC', 'DRP', 'W', 'P', 'DFG'];
-/** NSTP, HK and PE are not in the GWA. PEd and similar codes are. */
+/** NSTP, HK and PE aren't in the GWA. PEd and similar codes are. */
 export const isPrefixExcluded = isNonGwaCourseCode;
 
 export const gradeText = (g: unknown) => String(g ?? '').toUpperCase().trim();
@@ -179,7 +179,7 @@ export function calculateGWA(courses: Course[], excludedIds: Set<string> = new S
 		weighted += grade * units;
 		totalUnits += units;
 		totalCourses++;
-		// A 4.00 or 5.00 counts in the GWA but does not complete the course.
+		// A 4.00 or 5.00 counts in the GWA but doesn't complete the course.
 		if (grade <= 3) {
 			passedUnits += units;
 			completedCourses.push({ code: course.code, title: course.title, units, grade });
@@ -242,11 +242,11 @@ export function groupCourses(courses: Course[], by: 'term' | 'year'): Group[] {
 
 /* ---------- Honors ---------- */
 
-// Latin honors only. Honor Roll is not a Latin honor, so it is not a target or a badge.
+// Latin honors only. Honor Roll isn't a Latin honor, so it isn't a target or a badge.
 export const HONORS = [
-	{ key: 'summa', name: 'Summa Cum Laude', max: 1.2 },
-	{ key: 'magna', name: 'Magna Cum Laude', max: 1.45 },
-	{ key: 'cum', name: 'Cum Laude', max: 1.75 }
+	{ key: 'summa', name: 'Summa cum laude', max: 1.2 },
+	{ key: 'magna', name: 'Magna cum laude', max: 1.45 },
+	{ key: 'cum', name: 'Cum laude', max: 1.75 }
 ] as const;
 
 /** The honor track for a GWA. None with zero graded units. */

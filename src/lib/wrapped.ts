@@ -19,6 +19,8 @@ export interface Panel {
 	highlights?: Highlight[];
 	/** Caption under the highlights on the exported card. */
 	caption?: string;
+	/** Draw the card in the tin frame, as the ID card or with the highlights in the tray. */
+	frame?: 'id' | 'tin';
 }
 
 interface Sem {
@@ -98,36 +100,36 @@ function gwaPanel(d: Data): Panel {
 		return ['🌱', 'Comeback arc', "Mababa man ngayon, pwede pa 'yan i-improve. Marami nang naka-recover from this. Kaya mo 'yan."];
 	};
 	const [emoji, title, message] = pick();
-	return { emoji, title, value: g > 0 ? g.toFixed(4) : '--', subtitle: 'My Elbi GWA', message };
+	return { emoji, title, value: g > 0 ? g.toFixed(4) : '--', subtitle: 'My Elbi GWA', message, frame: g > 0 ? 'id' : undefined };
 }
 
 function semesterPanel(d: Data): Panel {
 	if (!d.semCount || !d.bestSem) {
-		return { emoji: '📅', title: 'Semester stats', value: '--', subtitle: 'No semester data yet', message: 'Check back once grades are in.' };
+		return { emoji: '📅', title: 'Sem stats', value: '--', subtitle: 'No sem has grades yet', message: 'Check back once grades are in.' };
 	}
 	const b = d.bestSem;
 	const bestWord = b.gwa <= 1.25 ? 'Your peak' : b.gwa <= 1.5 ? 'Nice run' : b.gwa <= 1.75 ? 'Solid sem' : b.gwa <= 2 ? 'Good one' : 'Best so far';
-	const highlights: Highlight[] = [{ label: '🏆 Best semester', name: b.name, detail: `GWA ${b.gwa.toFixed(4)}. ${bestWord}` }];
+	const highlights: Highlight[] = [{ label: '🏆 Best sem', name: b.name, detail: `GWA ${b.gwa.toFixed(4)}. ${bestWord}` }];
 	const t = d.worstSem;
 	if (t && t.name !== b.name) {
 		const word = t.gwa >= 3 ? 'Rough one' : t.gwa >= 2.5 ? 'Challenging' : t.gwa >= 2 ? 'Tough load' : 'Room to grow';
-		highlights.push({ label: '📈 Toughest semester', name: t.name, detail: `GWA ${t.gwa.toFixed(4)}. ${word}` });
+		highlights.push({ label: '📈 Toughest sem', name: t.name, detail: `GWA ${t.gwa.toFixed(4)}. ${word}` });
 	}
 	const n = d.semCount;
 	const message =
-		n >= 8 ? `${n} semesters completed. Almost there.`
+		n >= 8 ? `${n} sems done. Almost there.`
 		: n >= 6 ? `${n} sems done. The end is in sight.`
 		: n >= 4 ? `${n} sems in. You're halfway through.`
-		: n >= 2 ? `${n} semesters down, many more to go.`
+		: n >= 2 ? `${n} sems down, many more to go.`
 		: 'Just getting started. Enjoy the ride.';
-	return { emoji: '📅', title: 'Semester stats', value: String(n), subtitle: n === 1 ? 'semester with grades' : 'semesters with grades', message, highlights, caption: 'My lowest and highest semester' };
+	return { emoji: '📅', title: 'Sem stats', value: String(n), subtitle: n === 1 ? 'sem with grades' : 'sems with grades', message, highlights, caption: 'My best and toughest sem', frame: 'tin' };
 }
 
 function collectorPanel(d: Data): Panel {
 	const total = d.distinct.size;
 	const [emoji, title, message] =
-		total >= 10 ? ['🎰', 'Full collection', "You've seen it all, from 1.0 to 5.0, plus S, U, INC, DRP. Your transcript tells a story."]
-		: total >= 7 ? ['🃏', 'Variety pack', "A bit of everything. Shows you've taken different kinds of subjects with different outcomes."]
+		total >= 10 ? ['🎰', 'Full collection', "You've seen it all, from 1.00 to 5.00, plus S, U, INC, DRP. Your transcript tells a story."]
+		: total >= 7 ? ['🃏', 'Variety pack', "A bit of everything. Shows you've taken different kinds of courses with different outcomes."]
 		: total >= 4 ? ['🎲', 'Mixed bag', 'Some ups, some downs. Pretty normal for most students tbh.']
 		: d.numericKinds === 1 && d.gwa <= 1.5 ? ['🎯', 'One-track mind', "Same high grade over and over? That's rare consistency. How."]
 		: ['📊', 'Steady grades', "You stick to a range. Predictable in a good way. You know what you're doing."];
@@ -141,12 +143,12 @@ function collectorPanel(d: Data): Panel {
 function perseverancePanel(d: Data): Panel {
 	const f = d.fails;
 	const [emoji, title, message] =
-		f === 0 ? ['🏅', 'Clean record', "Zero 5.0s? That's actually impressive. Not everyone can say that."]
-		: f === 1 ? ['💫', 'One setback', "One 5.0 isn't the end of the world. It happens to plenty of us. Bounce back season."]
-		: f <= 3 ? ['🔥', 'Still standing', `${f} failed subjects but you're still here. Every retake is a chance to do better.`]
+		f === 0 ? ['🏅', 'Clean record', "Zero 5.00s? That's actually impressive. Not everyone can say that."]
+		: f === 1 ? ['💫', 'One setback', "One 5.00 isn't the end of the world. It happens to plenty of us. Bounce back season."]
+		: f <= 3 ? ['🔥', 'Still standing', `${f} failed courses but you're still here. Every retake is a chance to do better.`]
 		: f <= 5 ? ['🦅', 'Fighting spirit', `${f} times down but not out. The fact that you're still going says a lot.`]
-		: ['💎', 'Survivor', `${f} 5.0s and still pushing through? That takes real grit. Respect.`];
-	return { emoji, title, value: String(f), subtitle: f === 1 ? 'subject to retake' : 'subjects to retake', message };
+		: ['💎', 'Survivor', `${f} 5.00s and still pushing through? That takes real grit. Respect.`];
+	return { emoji, title, value: String(f), subtitle: f === 1 ? 'course to retake' : 'courses to retake', message };
 }
 
 function highlightsPanel(d: Data): Panel {
@@ -158,8 +160,8 @@ function highlightsPanel(d: Data): Panel {
 		emoji: '🫴',
 		title: 'Your highlights',
 		value: '',
-		subtitle: highlights.length ? undefined : 'Complete some subjects to see your highlights.',
-		message: 'Every subject counts toward the diploma.',
+		subtitle: highlights.length ? undefined : 'Pass a course to see your highlights.',
+		message: 'Every course counts toward the diploma.',
 		highlights,
 		caption: 'My lowest and highest grade'
 	};
@@ -191,7 +193,16 @@ export function wrappedPanels(courses: Course[], totalRequired = 155): Panel[] {
  * The extension drew a transparent overlay; the web app makes a full card so it
  * reads on its own when shared.
  */
-export async function drawCard(canvas: HTMLCanvasElement, p: Panel): Promise<void> {
+export interface IdCard {
+	name: string;
+	year: string;
+	course: string;
+}
+
+/** A highlight label without its leading emoji. */
+export const bare = (label: string) => label.replace(/^\P{L}+/u, '');
+
+export async function drawCard(canvas: HTMLCanvasElement, p: Panel, id: IdCard): Promise<void> {
 	const W = 1080;
 	const H = 1920;
 	canvas.width = W;
@@ -199,12 +210,13 @@ export async function drawCard(canvas: HTMLCanvasElement, p: Panel): Promise<voi
 	const ctx = canvas.getContext('2d');
 	if (!ctx) return;
 	try {
-		await Promise.all([document.fonts.load('800 96px Raleway'), document.fonts.load('500 40px Inter')]);
+		await Promise.all([document.fonts.load('800 96px Figtree'), document.fonts.load('500 40px Figtree')]);
 	} catch {
 		/* system fonts are fine */
 	}
-	const display = 'Raleway, Inter, system-ui, sans-serif';
-	const body = 'Inter, system-ui, sans-serif';
+	const display = 'Figtree, system-ui, sans-serif';
+	const body = display;
+	if (p.frame) return drawFrame(ctx, p, display, id);
 
 	ctx.fillStyle = '#7b2a22'; // hsl(5, 53%, 32%)
 	ctx.fillRect(0, 0, W, H);
@@ -316,4 +328,60 @@ export async function drawCard(canvas: HTMLCanvasElement, p: Panel): Promise<voi
 	ctx.font = `600 36px ${body}`;
 	ctx.fillStyle = '#f3c9c1';
 	ctx.fillText('gradesim.uplb.tools', cx, H - 110);
+}
+
+/** Reann Vargas's tin frame. The lid and the tray are tilted about 10 degrees. */
+async function drawFrame(ctx: CanvasRenderingContext2D, p: Panel, font: string, id: IdCard) {
+	const isId = p.frame === 'id';
+	const img = new Image();
+	img.src = `/frames/${isId ? 'tin-id' : 'tin'}.jpg`;
+	await img.decode();
+	ctx.drawImage(img, 0, 0, 1080, 1920);
+	const tilted = (x: number, y: number, draw: () => void) => {
+		ctx.save();
+		ctx.translate(x, y);
+		ctx.rotate(isId ? -0.19 : -0.17);
+		draw();
+		ctx.restore();
+	};
+	const text = (t: string, weight: number, size: number, color: string, y: number, max = 1080) => {
+		do ctx.font = `${weight} ${size}px ${font}`;
+		while (ctx.measureText(t).width > max && --size > 24);
+		ctx.fillStyle = color;
+		ctx.fillText(t, 0, y, max);
+	};
+	if (isId) {
+		ctx.textAlign = 'left';
+		const rows: [string, number, number, number][] = [
+			[id.name, 556, 638, 285],
+			[id.year, 566, 738, 295],
+			[id.course, 612, 830, 268]
+		];
+		rows.forEach(([t, x, y, max]) =>
+			tilted(x, y, () => {
+				text(t, 700, 40, '#1c1917', 0, max);
+			})
+		);
+		ctx.textAlign = 'center';
+		tilted(592, 1215, () => {
+			text(p.value, 800, 190, '#7b2a22', 0);
+			text(p.title, 800, 64, '#2b2321', 95);
+			text('My Elbi GWA on gradesim.uplb.tools', 600, 36, '#4a3f3c', 160);
+		});
+		return;
+	}
+	ctx.textAlign = 'center';
+	tilted(500, 700, () => {
+		text(p.title, 800, 84, '#2b2321', 0);
+		text('gradesim.uplb.tools', 600, 40, '#4a3f3c', 80);
+	});
+	const rows = p.highlights ?? [];
+	rows.forEach((h, i) =>
+		tilted(596, 1225, () => {
+			const y = rows.length > 1 ? i * 205 - 150 : -30;
+			text(bare(h.label), 600, 38, '#4a3f3c', y);
+			text(h.name, 800, 62, '#2b2321', y + 72, 700);
+			text(h.detail, 700, 42, '#7b2a22', y + 130);
+		})
+	);
 }
