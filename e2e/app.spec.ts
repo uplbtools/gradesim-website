@@ -185,6 +185,20 @@ test('curricula deep link picks the program in the planner', async ({ page }) =>
 	await expect(page).toHaveURL(/\/#planner$/);
 });
 
+test('an open major slot links to the course check form', async ({ page }) => {
+	await open(page, '/?program=BSSTAT#planner');
+	await page.getByTestId('planner-sheet').locator('.pl-row[data-primary][data-code="MAJ 1"]').click();
+	await expect(page.getByRole('link', { name: 'Tell us what you took' })).toHaveAttribute('href', /entry\.1230122317=BS\+Statistics\+%28BSSTAT%29$/);
+});
+
+test('the course check form opens filled in from the grades', async ({ page }) => {
+	await importFixture(page);
+	await open(page, '/?program=BSSTAT#planner');
+	await page.getByTestId('planner-sheet').locator('details').evaluateAll((els) => els.forEach((e) => ((e as HTMLDetailsElement).open = true)));
+	await page.getByTestId('planner-sheet').locator('.pl-row[data-primary][data-code="MAJ 3"]').click();
+	await expect(page.getByRole('link', { name: 'Tell us what you took' })).toHaveAttribute('href', /entry\.323619521=2nd\+year&entry\.1973018930=CMSC\+56%2C\+CMSC\+57$/);
+});
+
 test('content pages and old trailing-slash URLs', async ({ page, request }) => {
 	for (const path of ['/about/', '/install/', '/curricula/', '/privacy/', '/terms/']) {
 		const res = await page.goto(path);

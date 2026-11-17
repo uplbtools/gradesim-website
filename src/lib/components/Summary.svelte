@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { app } from '#lib/app.svelte.ts';
 	import { normalizeCourseCode } from '#lib/curriculum.ts';
-	import { calculateGWA, honorFor, lightSems } from '#lib/grades.ts';
+	import { calculateGWA, honorFor, lightSems, standingFor } from '#lib/grades.ts';
 	import { modelFor, planTrack } from '#lib/planner.ts';
 	import { amisCourses, surplusElectives } from '#lib/requirements.ts';
 	import Icon from './Icon.svelte';
@@ -23,6 +23,13 @@
 	});
 	const honor = $derived(honorFor(honors.gwa, honors.totalUnits));
 	const light = $derived(honor ? lightSems(app.courses) : []);
+	const standing = $derived(standingFor(app.courses));
+	const STANDING = {
+		warning: "Under UPLB's rules on scholastic standing, that gets a warning from your Dean.",
+		probation: 'That puts you on probation next sem, and your Dean may limit your load. Passing more than half your units next sem lifts it.',
+		dropped: "Under UPLB's rules that can drop you from your college. Talk to your College Secretary about readmission.",
+		barred: "Under UPLB's rules that can bar you from readmission. Talk to your College Secretary soon."
+	};
 </script>
 
 <section class="summary" aria-label="Your GWA">
@@ -33,6 +40,11 @@
 	<p class="sub">
 		{g.passedUnits} units passed{#if g.excludedCount}, {g.excludedUnits} left out{/if}.
 	</p>
+	{#if standing}
+		<p class="sub" data-testid="standing">
+			{standing.low} of {standing.units} units in {standing.label} got grades below 3.00. {STANDING[standing.level]}
+		</p>
+	{/if}
 	{#if light.length}
 		<p class="sub" data-testid="light-sems">
 			{light.map((s) => `${s.label} had ${s.units} units`).join(', and ')}. Latin honors need at least 15 units each sem, or the checklist's load when it's lower, unless your college accepted a reason such as health.

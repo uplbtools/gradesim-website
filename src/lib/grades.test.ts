@@ -8,6 +8,7 @@ import {
 	groupGWA,
 	honorFor,
 	lightSems,
+	standingFor,
 	parseAMISData,
 	scholarFor,
 	scholarHolds,
@@ -145,4 +146,16 @@ test('a sem under 15 academic units shows up for Latin honors, but not a midyear
 		c('1251', 'C 1', 3)
 	];
 	expect(lightSems(courses)).toEqual([{ label: '2nd sem AY 2024-25', abs: termKeyToAbs('1242'), units: 12 }]);
+});
+
+test('scholastic standing follows the share of units below 3.00 in the latest regular sem', () => {
+	const c = (termKey: string, code: string, units: number, grade: string): Course => ({ id: `${termKey}${code}`, termKey, termLabel: termName(termKey), ay: '', code, title: '', units, grade });
+	const sem = (termKey: string, low: number, grades = 5) => Array.from({ length: grades }, (_, i) => c(termKey, `X ${i}`, 3, i < low ? '5.00' : '2.00'));
+	expect(standingFor(sem('1251', 0))).toBeNull();
+	expect(standingFor(sem('1251', 2))?.level).toBe('warning');
+	expect(standingFor(sem('1251', 3))?.level).toBe('probation');
+	expect(standingFor(sem('1251', 4))?.level).toBe('dropped');
+	expect(standingFor(sem('1251', 5))?.level).toBe('barred');
+	expect(standingFor([...sem('1242', 3), ...sem('1251', 3)])?.level).toBe('dropped');
+	expect(standingFor([...sem('1251', 3), c('1253', 'M 1', 3, '2.00'), c('1251', 'HK 12', 2, '5.00'), c('1251', 'Y 1', 3, 'INC')])).toMatchObject({ level: 'probation', low: 9, units: 15 });
 });

@@ -268,6 +268,32 @@ export function lightSems(courses: Course[]) {
 	return [...sems.values()].sort((a, b) => a.abs - b.abs).slice(0, -1).filter((s) => s.units < 15);
 }
 
+/**
+ * Scholastic standing after the latest regular sem, from the share of academic
+ * units with final grades below 3 (UPLB Academic Catalogue, Scholastic Standing).
+ * Midyears, a 4.00 still open for removal, and INC, DRP and W are left out.
+ */
+export function standingFor(courses: Course[]) {
+	const sems = new Map<string, { label: string; abs: number; units: number; low: number }>();
+	courses.forEach((c) => {
+		const abs = termKeyToAbs(c.termKey);
+		const n = numericGrade(c.grade);
+		if (abs == null || abs % 3 === 2 || isPrefixExcluded(c.code) || n == null || n === 4) return;
+		const sem = sems.get(c.termKey) ?? { label: c.termLabel, abs, units: 0, low: 0 };
+		sem.units += c.units || 0;
+		if (n > 3) sem.low += c.units || 0;
+		sems.set(c.termKey, sem);
+	});
+	const [last, prev] = [...sems.values()].filter((s) => s.units > 0).sort((a, b) => b.abs - a.abs);
+	if (!last) return null;
+	const share = (s: typeof last) => s.low / s.units;
+	const onProbation = prev && share(prev) >= 0.5 && share(prev) <= 0.75;
+	const p = share(last);
+	const level: 'warning' | 'probation' | 'dropped' | 'barred' | null =
+		p === 1 ? 'barred' : p > 0.75 || (onProbation && p >= 0.5) ? 'dropped' : p >= 0.5 ? 'probation' : p >= 0.25 ? 'warning' : null;
+	return level ? { ...last, level } : null;
+}
+
 /** University or College Scholar for one term. Needs at least 15 academic units and no 5.00, 4.00 or INC. */
 export function scholarFor(group: ReturnType<typeof groupGWA>): string | null {
 	if (!(group.gwa > 0) || group.totalUnits < 15 || group.hasFailOrInc) return null;

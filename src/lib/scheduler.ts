@@ -42,6 +42,8 @@ export interface ChecklistCourse {
 	options?: string[];
 	/** A restricted elective: only these subjects or codes fill it. */
 	allow?: string[];
+	/** Other courses that fill this row, from an either-or checklist line. */
+	alt?: string[];
 	standing?: Standing | null;
 }
 

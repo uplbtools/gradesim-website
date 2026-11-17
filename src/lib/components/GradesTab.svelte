@@ -186,7 +186,7 @@
 							{#if !editing && parseFloat(raw) === 4}
 								{@const key = removalKey(c.termKey, c.code)}
 								<select class="select removal" aria-label="Removal exam result for {c.code}" value={app.s.removals[key] ?? ''} onchange={(e) => app.setRemoval(key, e.currentTarget.value)}>
-									<option value="">Removal exam not taken</option>
+									<option value="">Not removed yet, 5.00 after a year</option>
 									<option value="pass">Passed removal, 3.00</option>
 									<option value="fail">Failed removal, 5.00</option>
 								</select>

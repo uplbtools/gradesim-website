@@ -28,6 +28,7 @@ npm run test:e2e   # Playwright against the built site
 - `src/lib/data/*.json` is generated from the extension's `curriculum.js` and `catalog.js` by `node scripts/sync-extension-data.mjs <path to extension/src>`. Fix curriculum data in the extension repo, then run it.
 - `src/lib/bridge.ts` asks an installed extension for its grades (externally_connectable on Chromium browsers, a window message answered by a content script on Firefox).
 - `src/service-worker/` precaches the build so the app works offline.
+- `/program-courses.json` lists each program's name, checklist course codes, elective subjects and specialization courses for other UPLB Tools apps. It's prerendered from `programs.json` and served with an open CORS header.
 - `api/fix.ts` is the one server function. It files a student's checklist fix as an issue on `uplbtools/gradesim`, and it answers 503 until `GRADESIM_FIX_TOKEN` is set on Vercel, so the app opens a prefilled GitHub issue instead.
 
 ## Deployment

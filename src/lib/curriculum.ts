@@ -369,6 +369,32 @@ export function getProgramDataQuality(programCode: string, catalog: Record<strin
 }
 
 /** Curriculum checklist image slugs (static/curricula) to program codes. */
+/**
+ * Each program's course codes for other UPLB Tools apps, served at
+ * /program-courses.json. An elective entry is a course code or a subject
+ * such as MATH, which stands for every course of that subject.
+ */
+export function programCourses() {
+	const base = (code: string) => normalizeCourseCode(code).replace(/ \(\d+\)$/, '');
+	const uniq = (codes: string[]) => [...new Set(codes.map(base))].sort();
+	return Object.fromEntries(
+		Object.values(UPLB_PROGRAMS).map((p) => [
+			p.code,
+			{
+				name: p.name,
+				courses: uniq(p.majorCourses.filter((c) => !c.genericRequirement).flatMap((c) => [c.code, ...(c.alt ?? [])])),
+				electives: uniq(p.majorCourses.flatMap((c) => c.allow ?? [])),
+				specializations: Object.fromEntries(
+					Object.entries(p.specializations ?? {}).map(([key, s]) => [
+						key,
+						{ name: s.name, courses: uniq([...(s.pools ?? []).flatMap((pool) => pool.courses), ...(s.courses ?? []).map((c) => c.code)]) }
+					])
+				)
+			}
+		])
+	);
+}
+
 export const CHECKLIST_PROGRAM: Record<string, string> = {
 	'BS-Chemistry': 'BSCHEM',
 	'BS-Biology': 'BSBIO',

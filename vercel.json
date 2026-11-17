@@ -20,6 +20,10 @@
 			"headers": [{ "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }]
 		},
 		{
+			"source": "/program-courses.json",
+			"headers": [{ "key": "Access-Control-Allow-Origin", "value": "*" }]
+		},
+		{
 			"source": "/service-worker.js",
 			"headers": [{ "key": "Cache-Control", "value": "no-cache" }]
 		}

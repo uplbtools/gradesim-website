@@ -12,6 +12,7 @@ import {
   getCompletedRequirementSlotCodes,
   isGECourse,
   isNonGwaCourseCode,
+  programCourses,
   UPLB_PROGRAMS,
 } from "./curriculum.ts";
 
@@ -128,4 +129,14 @@ test("data quality for the rough guide notice", () => {
   expect(getProgramDataQuality("SOON", UPLB_CATALOG).confident).toBe(false);
   delete UPLB_PROGRAMS.SOON;
   expect(getProgramDataQuality("NOPE").confident).toBe(false);
+});
+
+test("programCourses lists each program's courses without slot rows", () => {
+  const all = programCourses();
+  expect(Object.keys(all)).toEqual(Object.keys(UPLB_PROGRAMS));
+  expect(all.BSCS.name).toBe(UPLB_PROGRAMS.BSCS.name);
+  expect(all.BSCS.courses).toContain("CMSC 190");
+  expect(all.BSCS.courses.some((c) => /\(\d+\)$|^(MAJ|GE|FE|HK|NSTP) \d+$/.test(c))).toBe(false);
+  expect(all.BSMATH.electives).toContain("MATH");
+  expect(all.BSECON.specializations.development.courses).toContain("ECON 134");
 });

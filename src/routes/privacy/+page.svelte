@@ -39,6 +39,11 @@
 			note, and nothing else. They are posted as a public issue on the GradeSim GitHub repository so that maintainers can
 			review them. Your grades, GWA and plan are never part of it.
 		</p>
+		<p>
+			When GradeSim doesn't know which courses count for a major slot, Tell us what you took opens a Google Form. The
+			link fills in your program, your specialization, your year level and the codes of courses you took that aren't
+			on your checklist. It carries no grades, and nothing is sent unless you submit the form.
+		</p>
 
 		<h2>The extension</h2>
 		<p>

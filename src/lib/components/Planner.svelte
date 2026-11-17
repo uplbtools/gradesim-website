@@ -35,6 +35,7 @@
 		type PlannerInput,
 	} from '#lib/planner.ts';
 	import { fixIssue, fixText, type ChecklistFix } from '#lib/fix.ts';
+	import { amisCourses, unlistedCourses } from '#lib/requirements.ts';
 	import { preGroups, type PlanCourse } from '#lib/scheduler.ts';
 	import { buildPlannerSheets, writeXlsx } from '#lib/xlsx.ts';
 	import FixForm from './FixForm.svelte';
@@ -211,6 +212,38 @@
 	});
 	const setSkip = (next: number[]) => setOptions({ skip: next.length ? next.sort((a, b) => a - b) : undefined });
 	const petitions = $derived(Object.keys(app.s.plannerPetitions));
+	// Programs whose major slots have no official course list yet, by their label on the check form.
+	const CONFIRM_FORM: Record<string, string> = {
+		BSAGRI: 'BS Agriculture (BSAGRI)',
+		BSACHEM: 'BS Agricultural Chemistry (BSACHEM)',
+		BSABE: 'BS Agricultural and Biosystems Engineering (BSABE)',
+		BSAAE: 'BS Agricultural and Applied Economics (BSAAE)',
+		BSCHE: 'BS Chemical Engineering (BSCHE)',
+		BSECON: 'BS Economics (BSECON)',
+		BSEE: 'BS Electrical Engineering (BSEE)',
+		BSHE: 'BS Human Ecology (BSHE)',
+		BSSTAT: 'BS Statistics (BSSTAT)',
+		BSDC: 'BS Development Communication (BSDC)',
+		ASDC: 'Associate of Science in Development Communication (ASDC)',
+		AASS: 'Associate in Arts in Sports Studies (AASS)'
+	};
+	// The check form, filled in with what GradeSim already knows.
+	const confirmForm = $derived.by(() => {
+		const label = CONFIRM_FORM[app.program.code];
+		if (!label || !model) return null;
+		const years = new Set(app.courses.map((c) => c.ay)).size;
+		const fields = {
+			'entry.1230122317': label,
+			'entry.1556773492': app.program.specializations?.[app.specialization ?? '']?.name,
+			'entry.323619521': ['', '2nd year', '3rd year', '4th year', '5th year'][years - 1],
+			'entry.1973018930': unlistedCourses(model.courses, amisCourses(app.grades), app.s.substitutions).join(', ')
+		};
+		const filled = Object.entries(fields).filter((f): f is [string, string] => !!f[1]);
+		return `https://docs.google.com/forms/d/e/1FAIpQLSf3AEKf6DTpsXfq3WZAc3RXGPaX2V3qLydheP21g_gMHtUcXQ/viewform?${new URLSearchParams([['usp', 'pp_url'], ...filled])}`;
+	});
+	const confirmUrl = (c: PlanCourse) => (c.code.startsWith('MAJ ') && !c.allow && !c.options ? confirmForm : null);
+	const pickSpec = (c: PlanCourse) =>
+		!app.specialization && Object.values(app.program.specializations ?? {}).some((s) => s.pools?.some((p) => p.slots.includes(c.code)));
 	const subOptions = $derived(substituteOptions(app.program, app.gwa.completedCourses, app.s.substitutions));
 
 	function credit(code: string, taken: string) {
@@ -448,6 +481,10 @@
 				</details>
 			{:else if !c.genericRequirement}
 				{@render fixLine(c, fix)}
+			{:else if pickSpec(c)}
+				<p class="pl-muted">Pick your specialization in Plan settings to see which courses count here. {#if confirmUrl(c)}If yours isn't there, <a href={confirmUrl(c)} target="_blank" rel="external noopener">tell us what you took</a>.{/if}</p>
+			{:else if confirmUrl(c)}
+				<p class="pl-muted">GradeSim doesn't know yet which courses count here. <a href={confirmUrl(c)} target="_blank" rel="external noopener">Tell us what you took</a>{#if app.hasData}. The form opens filled in from your grades, so check it and submit.{/if}</p>
 			{/if}
 		</aside>
 	{/if}
@@ -539,7 +576,7 @@
 							{#if f.off}<p class="pl-off">You're taking this sem off. <button type="button" class="textbtn" onclick={() => setSkip(skipped.filter((a) => a !== term.column.abs))}>Take it after all</button></p>{/if}
 							{#if f.tag === 'Next' || f.tag === 'Now'}
 								{@const codes = term.cards.filter((c) => !model.byCode.get(c.code)?.genericRequirement && c.status !== 'passed' && c.status !== 'failed').map((c) => c.code)}
-								{#if codes.length}<a class="textbtn pl-roomtba" href={roomTbaLink(term.column.abs, codes)} target="_blank" rel="external noopener">Plan sections in Room TBA <Icon name="external" size={14} /></a>{/if}
+								{#if codes.length}<a class="textbtn pl-roomtba" href={roomTbaLink(term.column.abs, codes, app.program.code)} target="_blank" rel="external noopener">Plan sections in Room TBA <Icon name="external" size={14} /></a>{/if}
 							{/if}
 							{#if term.column.abs === view.startAbs && spare.length}
 								<details class="pl-term pl-also">
