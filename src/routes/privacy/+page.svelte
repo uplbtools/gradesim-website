@@ -10,7 +10,7 @@
 />
 
 <div class="wrap">
-	<PageHead title="Privacy policy">Last updated November 16, 2026</PageHead>
+	<PageHead title="Privacy policy">Last updated November 17, 2026</PageHead>
 
 	<article class="prose">
 		<h2>What Elbi GradeSim is</h2>
@@ -43,6 +43,10 @@
 			When GradeSim doesn't know which courses count for a major slot, Tell us what you took opens a Google Form. The
 			link fills in your program, your specialization, your year level and the codes of courses you took that aren't
 			on your checklist. It carries no grades, and nothing is sent unless you submit the form.
+		</p>
+		<p>
+			Plan sections in Room TBA opens Room TBA's planner in a new tab. The link carries the course codes for that sem and
+			your program code, so Room TBA can look up their sections. It carries no grades.
 		</p>
 
 		<h2>The extension</h2>
