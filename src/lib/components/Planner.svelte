@@ -239,11 +239,9 @@
 	const check = $derived.by(() => {
 		const program = CONFIRM_FORM[app.program.code];
 		if (!program || !model) return null;
-		const years = new Set(app.courses.map((c) => c.ay)).size;
 		return {
 			program,
 			major: app.program.specializations?.[app.specialization ?? '']?.name,
-			year: ['', '2nd year', '3rd year', '4th year', '5th year'][years - 1] || undefined,
 			taken: unlistedCourses(model.courses, amisCourses(app.grades), app.s.substitutions)
 		};
 	});
