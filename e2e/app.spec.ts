@@ -226,6 +226,7 @@ test('the course check lists courses from the grades', async ({ page }) => {
 	await page.getByRole('button', { name: 'Tell us what you took' }).click();
 	await expect(page.getByLabel('CMSC 56', { exact: true })).toBeVisible();
 	await page.getByLabel('CMSC 57', { exact: true }).check();
+	await page.getByLabel('Year level').selectOption('2nd year');
 	await page.getByLabel('How do you know they count?').selectOption('My checklist lists them');
 	await page.getByRole('button', { name: 'Send', exact: true }).click();
 	await expect(page.getByText('You told us what you took. Thank you!')).toBeVisible();
