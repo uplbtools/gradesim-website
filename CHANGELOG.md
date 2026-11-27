@@ -1,3 +1,11 @@
+## [0.39.1](https://github.com/uplbtools/gradesim-website/compare/v0.39.0...v0.39.1) (2026-11-27)
+
+
+### Bug Fixes
+
+* **planner:** the course check always asks for year level ([#439](https://github.com/uplbtools/gradesim-website/issues/439)) ([b3b66b8](https://github.com/uplbtools/gradesim-website/commit/b3b66b8074517a32991578f744c6bc81fa439d3e))
+* **wrapped:** updated sem stats art ([#437](https://github.com/uplbtools/gradesim-website/issues/437)) ([ff46b27](https://github.com/uplbtools/gradesim-website/commit/ff46b27128c8b828a02131fc4f07394ce5d71c35))
+
 # [0.39.0](https://github.com/uplbtools/gradesim-website/compare/v0.38.2...v0.39.0) (2026-11-20)
 
 
