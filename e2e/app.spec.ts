@@ -226,6 +226,7 @@ test('the course check lists courses from the grades', async ({ page }) => {
 	await page.getByRole('button', { name: 'Tell us what you took' }).click();
 	await expect(page.getByLabel('CMSC 56', { exact: true })).toBeVisible();
 	await page.getByLabel('CMSC 57', { exact: true }).check();
+	await page.getByLabel('Year level').selectOption('2nd year');
 	await page.getByLabel('How do you know they count?').selectOption('My checklist lists them');
 	await page.getByRole('button', { name: 'Send', exact: true }).click();
 	await expect(page.getByText('You told us what you took. Thank you!')).toBeVisible();
@@ -403,6 +404,30 @@ test('every Wrapped card is drawn on the picnic art, this sem comes first with i
 		await page.getByRole('button', { name: 'Next' }).click();
 		await expect(card).toHaveAccessibleName(name);
 	}
+});
+
+test('course contributions use the year level the student picks', async ({ page }) => {
+	let submitted = '';
+	await page.route('https://docs.google.com/forms/**', (route) => {
+		submitted = route.request().postData() ?? '';
+		return route.fulfill({ status: 200, body: '' });
+	});
+	await importFixture(page);
+	await page.getByRole('combobox', { name: 'Your degree program' }).selectOption('BSSTAT');
+	await page.getByRole('tab', { name: 'Planner' }).click();
+	await page.getByRole('button', { name: /^MAJ \d+,/ }).first().click();
+	await page.getByRole('button', { name: 'Tell us what you took' }).click();
+	const year = page.getByRole('combobox', { name: 'Year level' });
+	await expect(year).toHaveValue('');
+	await expect(year).toHaveAttribute('required', '');
+	await year.selectOption('4th year');
+	await page.getByRole('textbox', { name: /Other courses|Course codes/ }).fill('STAT 164');
+	await page.getByRole('combobox', { name: 'How do you know they count?' }).selectOption('My checklist lists them');
+	await page.getByRole('button', { name: 'Send', exact: true }).click();
+	await expect(page.getByText('You told us what you took. Thank you!')).toBeVisible();
+	const fields = new URLSearchParams(submitted);
+	expect(fields.get('entry.323619521')).toBe('4th year');
+	expect(fields.get('entry.1973018930')).toBe('STAT 164');
 });
 
 test('courses from Room TBA land in the plan, and the next sem links back', async ({ page }) => {

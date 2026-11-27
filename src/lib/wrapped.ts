@@ -383,7 +383,7 @@ export async function drawCard(canvas: HTMLCanvasElement, p: Panel, id: IdCard):
 }
 
 
-const CREDIT = 'Design by Reann Vargas and Danica Manadong';
+const CREDIT = 'Design by Reann Vargas';
 /** Reann Vargas's pages. Each tin, tray and note is tilted, so text is drawn turned with it. */
 const FRAMES = { sem: 'tin-stats', id: 'tin-id', tin: 'tin', note: 'tin', tray: 'tray', open: 'tin-red' };
 const INK = '#1c1917';
@@ -511,12 +511,10 @@ async function drawFrame(ctx: CanvasRenderingContext2D, p: Panel, font: string, 
 		ctx.textAlign = 'center';
 		at(414, 1274, -0.19, () => text(String(p.units ?? ''), 800, 40, INK, 0, 220));
 		at(515, 1404, -0.19, () => text(p.title, 800, 40, /Scholar$/.test(p.title) ? RED : INK, 0, 250));
-		at(817, 1245, -0.1, () => {
-			if (!g) return star(0, 0, 80, 0);
-			text('GWA', 700, 32, SOFT, -48);
-			text(g, 800, 72, RED, 30, 210);
+		at(817, 1320, -0.1, () => {
+			if (!g) return star(0, -20, 35, 0);
+			text(g, 800, 64, RED, 0, 210);
 		});
-		at(612, 1575, -0.193, () => text(url, 700, 32, INK, 11, 260));
 		return;
 	}
 

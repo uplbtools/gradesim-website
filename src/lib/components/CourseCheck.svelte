@@ -3,11 +3,10 @@
 	let {
 		program,
 		major,
-		year,
 		taken,
 		onsent,
 		oncancel
-	}: { program: string; major?: string; year?: string; taken: string[]; onsent: () => void; oncancel: () => void } = $props();
+	}: { program: string; major?: string; taken: string[]; onsent: () => void; oncancel: () => void } = $props();
 
 	const FORM = 'https://docs.google.com/forms/d/e/1FAIpQLSf3AEKf6DTpsXfq3WZAc3RXGPaX2V3qLydheP21g_gMHtUcXQ/formResponse';
 	const YEARS = ['2nd year', '3rd year', '4th year', '5th year', 'Graduated'];
@@ -36,7 +35,7 @@
 		const fields = [
 			['entry.1230122317', program],
 			['entry.1556773492', major],
-			['entry.323619521', year ?? yearPick],
+			['entry.323619521', yearPick],
 			['entry.1973018930', codes],
 			['entry.73101628', sure],
 			['entry.824639324', contact.trim()]
@@ -67,15 +66,13 @@
 		{taken.length ? 'Other courses (optional)' : 'Course codes'}
 		<input class="input" bind:value={others} placeholder={taken.length ? undefined : 'STAT 164, STAT 166'} />
 	</label>
-	{#if !year}
-		<label class="field">
-			Year level
-			<select class="select" bind:value={yearPick} required>
-				<option value="" disabled>Pick one</option>
-				{#each YEARS as y (y)}<option>{y}</option>{/each}
-			</select>
-		</label>
-	{/if}
+	<label class="field">
+		Year level
+		<select class="select" bind:value={yearPick} required>
+			<option value="" disabled>Pick one</option>
+			{#each YEARS as y (y)}<option>{y}</option>{/each}
+		</select>
+	</label>
 	<label class="field">
 		How do you know they count?
 		<select class="select" bind:value={sure} required>
